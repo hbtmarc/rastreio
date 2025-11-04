@@ -389,6 +389,41 @@
             opacity: 0.6;
         }
 
+        /* Animações para entregas urgentes */
+        @keyframes pulse-glow {
+            0%, 100% {
+                transform: scale(1);
+                text-shadow: 0 0 5px rgba(220, 38, 38, 0.5);
+            }
+            50% {
+                transform: scale(1.05);
+                text-shadow: 0 0 20px rgba(220, 38, 38, 0.8), 0 0 30px rgba(220, 38, 38, 0.6);
+            }
+        }
+
+        @keyframes pulse-glow-orange {
+            0%, 100% {
+                transform: scale(1);
+                text-shadow: 0 0 5px rgba(234, 88, 12, 0.5);
+            }
+            50% {
+                transform: scale(1.05);
+                text-shadow: 0 0 20px rgba(234, 88, 12, 0.8), 0 0 30px rgba(234, 88, 12, 0.6);
+            }
+        }
+
+        .delivery-today {
+            animation: pulse-glow 1.5s ease-in-out infinite;
+            font-weight: 900;
+            color: #dc2626 !important;
+        }
+
+        .delivery-tomorrow {
+            animation: pulse-glow-orange 2s ease-in-out infinite;
+            font-weight: 900;
+            color: #ea580c !important;
+        }
+
     </style>
 </head>
 <body class="bg-blue-50 text-gray-900">
@@ -976,6 +1011,7 @@
              */
             async function init() {
                 await loadPurchasesFromStorage();
+                await fixSundayDeliveries(); // Corrige entregas que caiam no domingo
                 addEventListeners();
                 setupCarousel(); // Inicializa o carrossel
                 
@@ -987,6 +1023,45 @@
                     updateSuggestions();
                     renderList();
                 });
+            }
+
+            /**
+             * Corrige datas de entrega que caiam no domingo
+             */
+            async function fixSundayDeliveries() {
+                let correctedCount = 0;
+                
+                for (const purchase of state.purchases) {
+                    if (purchase.deliveryDate && purchase.id) {
+                        const deliveryDate = new Date(purchase.deliveryDate + 'T00:00:00');
+                        const dayOfWeek = deliveryDate.getDay();
+                        
+                        // Se for domingo (0), ajusta para segunda-feira
+                        if (dayOfWeek === 0) {
+                            deliveryDate.setDate(deliveryDate.getDate() + 1);
+                            const year = deliveryDate.getFullYear();
+                            const month = String(deliveryDate.getMonth() + 1).padStart(2, '0');
+                            const day = String(deliveryDate.getDate()).padStart(2, '0');
+                            const newDate = `${year}-${month}-${day}`;
+                            
+                            // Atualiza no Firebase diretamente
+                            try {
+                                await db.ref(`purchases/${purchase.id}`).update({
+                                    deliveryDate: newDate,
+                                    updatedAt: firebase.database.ServerValue.TIMESTAMP
+                                });
+                                correctedCount++;
+                                console.log(`Data ajustada de domingo para segunda: ${purchase.name}`);
+                            } catch (error) {
+                                console.error(`Erro ao corrigir data de ${purchase.name}:`, error);
+                            }
+                        }
+                    }
+                }
+                
+                if (correctedCount > 0) {
+                    showToast(`${correctedCount} data(s) de domingo ajustada(s) para segunda-feira`, 'bg-blue-500');
+                }
             }
 
             /**
@@ -1193,14 +1268,14 @@
                 } else if (daysToDelivery > 0) {
                     if (daysToDelivery === 1) {
                         deliveryTimeHTML = 'Amanhã!';
-                        deliveryColorClass = 'text-gray-800';
+                        deliveryColorClass = 'delivery-tomorrow'; // Classe com animação
                     } else {
                         deliveryTimeHTML = `Faltam ${formatRemainingTime(daysToDelivery)}`;
                         deliveryColorClass = 'text-gray-800';
                     }
                 } else if (daysToDelivery === 0) {
                     deliveryTimeHTML = `Entrega Hoje!`;
-                    deliveryColorClass = 'text-cyan-600';
+                    deliveryColorClass = 'delivery-today'; // Classe com animação
                 } else {
                     // Atrasado
                     const daysLate = Math.abs(daysToDelivery);
@@ -1267,9 +1342,9 @@
                                 <div class="flex items-center gap-3 flex-1 min-w-0">
                                     <div class="flex-shrink-0 w-16 h-16 bg-gray-50/50 rounded-lg flex items-center justify-center text-2xl" aria-hidden="true">${categoryIcon}</div>
                                     <div class="flex-1 min-w-0 flex flex-col justify-center h-16">
-                                        <h3 class="text-base font-bold text-gray-800 leading-tight fit-text hover:text-teal-600 transition-colors cursor-pointer" 
+                                        <h3 class="text-base font-bold text-gray-800 leading-tight fit-text hover:text-teal-600 transition-colors cursor-pointer whitespace-nowrap" 
                                             data-max-size="16"
-                                            data-min-size="12"
+                                            data-min-size="9"
                                             title="${escapeHTML(item.name)}"
                                             onclick="window.open('${item.orderLink || '#'}', '_blank')"
                                             role="button"
@@ -1564,6 +1639,24 @@
                     const isCustom = e.target.value === 'outro';
                     customTrackingType.style.display = isCustom ? 'block' : 'none';
                     if (!isCustom) customTrackingType.value = '';
+                });
+
+                // Ajusta data de entrega se cair no domingo (não há entrega aos domingos)
+                const deliveryDateInput = document.getElementById('delivery-date');
+                deliveryDateInput.addEventListener('change', (e) => {
+                    const selectedDate = new Date(e.target.value + 'T00:00:00');
+                    const dayOfWeek = selectedDate.getDay();
+                    
+                    // Se for domingo (0), ajusta para segunda-feira
+                    if (dayOfWeek === 0) {
+                        selectedDate.setDate(selectedDate.getDate() + 1);
+                        const year = selectedDate.getFullYear();
+                        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(selectedDate.getDate()).padStart(2, '0');
+                        e.target.value = `${year}-${month}-${day}`;
+                        
+                        showToast('Data ajustada para segunda-feira (não há entregas aos domingos)', 'bg-blue-500');
+                    }
                 });
 
                 // Ao abrir o modal, reseta o campo personalizado
@@ -2235,7 +2328,13 @@
 
             function getDayOfWeek(dateString) {
                 if (!dateString) return '';
-                const date = new Date(dateString + 'T00:00:00');
+                let date = new Date(dateString + 'T00:00:00');
+                
+                // Se for domingo, ajusta para segunda-feira
+                if (date.getDay() === 0) {
+                    date.setDate(date.getDate() + 1);
+                }
+                
                 const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
                 return days[date.getDay()];
             }
