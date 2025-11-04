@@ -18,6 +18,13 @@
     
     <!-- Inicialização do Firebase -->
     <script>
+        // Função para escapar strings HTML
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         // Configuração do Firebase
         const firebaseConfig = {
             databaseURL: "https://rastreio-marc35-default-rtdb.firebaseio.com"
@@ -88,6 +95,33 @@
                     const data = snapshot.val() || {};
                     callback(data);
                 });
+            },
+
+            // Salvar um novo tipo de rastreio personalizado
+            async saveCustomTrackingType(trackingType) {
+                try {
+                    const snapshot = await db.ref('customTrackingTypes').once('value');
+                    const types = snapshot.val() || [];
+                    if (!types.includes(trackingType)) {
+                        types.push(trackingType);
+                        await db.ref('customTrackingTypes').set(types);
+                    }
+                    return { success: true };
+                } catch (error) {
+                    console.error('Erro ao salvar tipo de rastreio:', error);
+                    return { success: false, error };
+                }
+            },
+
+            // Buscar todos os tipos de rastreio personalizados
+            async getCustomTrackingTypes() {
+                try {
+                    const snapshot = await db.ref('customTrackingTypes').once('value');
+                    return snapshot.val() || [];
+                } catch (error) {
+                    console.error('Erro ao buscar tipos de rastreio:', error);
+                    return [];
+                }
             }
         };
     </script>
@@ -100,6 +134,41 @@
         /* Define a fonte padrão para todo o corpo */
         body {
             font-family: 'Inter', sans-serif;
+        }
+
+        /* Estilos para o dropdown de lojas */
+        .store-menu {
+            scrollbar-width: thin;
+            scrollbar-color: #94a3b8 #f1f5f9;
+        }
+
+        .store-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .store-menu::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .store-menu::-webkit-scrollbar-thumb {
+            background-color: #94a3b8;
+            border-radius: 3px;
+        }
+
+        .store-option {
+            padding: 0.5rem 0.75rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .store-option:last-child {
+            border-bottom: none;
+        }
+
+        .store-option:hover {
+            background-color: #f8fafc;
         }
         
 
@@ -149,27 +218,86 @@
         /* --- ESTILOS PARA O MODAL (UX 10/10) --- */
 
         /* Estilo para o seletor de ícone visual (radio) */
+        /* Container do carrossel */
+        #icon-carousel {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            padding: 0 3rem;
+        }
+
+        #icon-carousel-content {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        #icon-carousel-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Botões de navegação */
+        .carousel-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 9999px;
+            background-color: white;
+            border: 2px solid #e5e7eb;
+            color: #4b5563;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .carousel-nav-btn:hover {
+            background-color: #f3f4f6;
+            color: #111827;
+            border-color: #d1d5db;
+        }
+
+        .carousel-nav-btn.prev {
+            left: 0;
+        }
+
+        .carousel-nav-btn.next {
+            right: 0;
+        }
+
         .icon-radio-label {
-            display: inline-flex; /* Alterado para inline-flex */
-            align-items: center; /* Alinha o ícone */
-            justify-content: center; /* Centraliza o ícone */
-            width: 3.5rem; /* 56px */
-            height: 3.5rem; /* 56px */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 3.5rem;
+            height: 3.5rem;
             border: 2px solid transparent;
-            border-radius: 0.75rem; /* 12px */
-            background-color: #f3f4f6; /* bg-gray-100 */
-            color: #4b5563; /* text-gray-600 */
+            border-radius: 0.75rem;
+            background-color: #f3f4f6;
+            color: #4b5563;
             cursor: pointer;
             transition: all 0.2s ease-in-out;
-            position: relative; /* Para o tooltip */
+            position: relative;
+            flex: 0 0 auto;
         }
+
         .icon-radio-label:hover {
-            background-color: #e5e7eb; /* bg-gray-200 */
+            background-color: #e5e7eb;
         }
         
         /* Ajuste de tamanho do ícone Font Awesome */
         .icon-radio-label .fa-solid {
-            font-size: 1.5rem; /* 24px */
+            font-size: 1.5rem;
         }
 
         /* Estilo para o radio checked */
@@ -258,39 +386,94 @@
                     <p>Nenhum backup encontrado</p>
                 </div>
             </div>
-        </div>        <!-- Filtros (Pílulas) -->
-        <div class="mb-8">
-            <div id="filter-container" class="flex items-center gap-2 pb-2 overflow-x-auto">
-                <button 
-                    data-filter="todos" 
-                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-bold border transition-all duration-200 cursor-pointer bg-teal-600 text-white border-transparent shadow">
-                    Todos
+        </div>        <!-- Filtros e Controles -->
+        <div class="mb-8 space-y-4">
+            <!-- Status e Arquivados -->
+            <div class="flex items-center justify-between">
+                <div id="filter-container" class="flex items-center gap-2 pb-2 overflow-x-auto">
+                    <button 
+                        data-filter="todos" 
+                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-bold border transition-all duration-200 cursor-pointer bg-teal-600 text-white border-transparent shadow">
+                        Todos
+                    </button>
+                    <button 
+                        data-filter="Aguardando Envio" 
+                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                        Aguardando Envio
+                    </button>
+                    <button 
+                        data-filter="Em Trânsito" 
+                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                        Em Trânsito
+                    </button>
+                    <button 
+                        data-filter="Atrasado" 
+                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                        Atrasado
+                    </button>
+                    <button 
+                        data-filter="Entregue" 
+                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                        Entregue
+                    </button>
+                    <button 
+                        data-filter="Cancelado" 
+                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                        Cancelado
+                    </button>
+                </div>
+
+                <!-- Toggle Arquivados -->
+                <button id="toggle-archived" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <i class="fa-solid fa-box-archive"></i>
+                    Ver Arquivados
                 </button>
-                <button 
-                    data-filter="Aguardando Envio" 
-                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
-                    Aguardando Envio
-                </button>
-                <button 
-                    data-filter="Em Trânsito" 
-                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
-                    Em Trânsito
-                </button>
-                <button 
-                    data-filter="Atrasado" 
-                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
-                    Atrasado
-                </button>
-                <button 
-                    data-filter="Entregue" 
-                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
-                    Entregue
-                </button>
-                <button 
-                    data-filter="Cancelado" 
-                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
-                    Cancelado
-                </button>
+            </div>
+
+            <!-- Filtros e Contadores -->
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+                <!-- Filtros -->
+                <div class="flex items-center gap-3 flex-1">
+                    <!-- Filtro de Loja -->
+                    <div class="relative flex-1 max-w-xs">
+                        <i class="fa-solid fa-store absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        <select 
+                            id="store-filter" 
+                            class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none cursor-pointer bg-white">
+                            <option value="">Todas as lojas</option>
+                            <!-- Será preenchido dinamicamente -->
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
+                    
+                    <!-- Filtro de Categoria -->
+                    <div class="relative flex-1 max-w-xs">
+                        <i class="fa-solid fa-tags absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        <select 
+                            id="category-filter" 
+                            class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none cursor-pointer bg-white">
+                            <option value="">Todas as categorias</option>
+                            <option value="caixa">Caixa/Pacote</option>
+                            <option value="presente">Presente</option>
+                            <option value="eletronico">Eletrônico</option>
+                            <option value="roupa">Roupas/Sacola</option>
+                            <option value="comida">Comida/Mercado</option>
+                            <option value="livro">Livro</option>
+                            <option value="computador">Computador/Hardware</option>
+                            <option value="game">Games/Consoles</option>
+                            <option value="casa">Casa/Decoração</option>
+                            <option value="ferramenta">Ferramentas</option>
+                            <option value="saude">Saúde/Remédios</option>
+                            <option value="musica">Música/Instrumentos</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
+                </div>
+                
+                <!-- Contador de Itens -->
+                <div class="text-sm text-gray-600">
+                    <span id="filtered-count">0</span> / <span id="total-count">0</span> itens
+                </div>
             </div>
         </div>
 
@@ -324,40 +507,118 @@
                 <!-- ID oculto para edição -->
                 <input type="hidden" id="edit-id">
 
-                <!-- Seletor de Ícone Visual (SEM radio buttons visíveis) -->
+                <!-- Seletor de Ícone Visual com Carrossel -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
-                    <div id="icon-selector" class="flex flex-wrap gap-3">
-                        <!-- Opção 1: Caixa -->
-                        <input type="radio" id="icon-caixa" name="item-icon-radio" value="caixa" class="icon-radio" checked>
-                        <label for="icon-caixa" class="icon-radio-label" title="Caixa">
-                            <i class="fa-solid fa-box"></i>
-                        </label>
-                        <!-- Opção 2: Presente -->
-                        <input type="radio" id="icon-presente" name="item-icon-radio" value="presente" class="icon-radio">
-                        <label for="icon-presente" class="icon-radio-label" title="Presente">
-                            <i class="fa-solid fa-gift"></i>
-                        </label>
-                        <!-- Opção 3: Eletrônico -->
-                        <input type="radio" id="icon-eletronico" name="item-icon-radio" value="eletronico" class="icon-radio">
-                        <label for="icon-eletronico" class="icon-radio-label" title="Eletrônico">
-                             <i class="fa-solid fa-mobile-screen"></i>
-                        </label>
-                         <!-- Opção 4: Roupas -->
-                        <input type="radio" id="icon-roupa" name="item-icon-radio" value="roupa" class="icon-radio">
-                        <label for="icon-roupa" class="icon-radio-label" title="Roupas/Sacola">
-                            <i class="fa-solid fa-bag-shopping"></i>
-                        </label>
-                        <!-- Opção 5: Comida -->
-                        <input type="radio" id="icon-comida" name="item-icon-radio" value="comida" class="icon-radio">
-                        <label for="icon-comida" class="icon-radio-label" title="Comida/Mercado">
-                            <i class="fa-solid fa-utensils"></i>
-                        </label>
-                        <!-- Opção 6: Livro -->
-                        <input type="radio" id="icon-livro" name="item-icon-radio" value="livro" class="icon-radio">
-                        <label for="icon-livro" class="icon-radio-label" title="Livro">
-                            <i class="fa-solid fa-book"></i>
-                        </label>
+                    <div id="icon-carousel">
+                        <button type="button" class="carousel-nav-btn prev" id="carousel-prev">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <div id="icon-carousel-content">
+                            <!-- Opção 1: Caixa -->
+                            <input type="radio" id="icon-caixa" name="item-icon-radio" value="caixa" class="icon-radio" checked>
+                            <label for="icon-caixa" class="icon-radio-label" title="Caixa/Pacote">
+                                <i class="fa-solid fa-box"></i>
+                            </label>
+                            <!-- Opção 2: Presente -->
+                            <input type="radio" id="icon-presente" name="item-icon-radio" value="presente" class="icon-radio">
+                            <label for="icon-presente" class="icon-radio-label" title="Presente">
+                                <i class="fa-solid fa-gift"></i>
+                            </label>
+                            <!-- Opção 3: Eletrônico -->
+                            <input type="radio" id="icon-eletronico" name="item-icon-radio" value="eletronico" class="icon-radio">
+                            <label for="icon-eletronico" class="icon-radio-label" title="Eletrônico">
+                                <i class="fa-solid fa-mobile-screen"></i>
+                            </label>
+                            <!-- Opção 4: Roupas -->
+                            <input type="radio" id="icon-roupa" name="item-icon-radio" value="roupa" class="icon-radio">
+                            <label for="icon-roupa" class="icon-radio-label" title="Roupas/Sacola">
+                                <i class="fa-solid fa-bag-shopping"></i>
+                            </label>
+                            <!-- Opção 5: Comida -->
+                            <input type="radio" id="icon-comida" name="item-icon-radio" value="comida" class="icon-radio">
+                            <label for="icon-comida" class="icon-radio-label" title="Comida/Mercado">
+                                <i class="fa-solid fa-utensils"></i>
+                            </label>
+                            <!-- Opção 6: Livro -->
+                            <input type="radio" id="icon-livro" name="item-icon-radio" value="livro" class="icon-radio">
+                            <label for="icon-livro" class="icon-radio-label" title="Livro">
+                                <i class="fa-solid fa-book"></i>
+                            </label>
+                            <!-- Opção 7: Computador -->
+                            <input type="radio" id="icon-computador" name="item-icon-radio" value="computador" class="icon-radio">
+                            <label for="icon-computador" class="icon-radio-label" title="Computador/Hardware">
+                                <i class="fa-solid fa-computer"></i>
+                            </label>
+                            <!-- Opção 8: Games -->
+                            <input type="radio" id="icon-game" name="item-icon-radio" value="game" class="icon-radio">
+                            <label for="icon-game" class="icon-radio-label" title="Games/Consoles">
+                                <i class="fa-solid fa-gamepad"></i>
+                            </label>
+                            <!-- Opção 9: Casa -->
+                            <input type="radio" id="icon-casa" name="item-icon-radio" value="casa" class="icon-radio">
+                            <label for="icon-casa" class="icon-radio-label" title="Casa/Decoração">
+                                <i class="fa-solid fa-house"></i>
+                            </label>
+                            <!-- Opção 10: Ferramenta -->
+                            <input type="radio" id="icon-ferramenta" name="item-icon-radio" value="ferramenta" class="icon-radio">
+                            <label for="icon-ferramenta" class="icon-radio-label" title="Ferramentas">
+                                <i class="fa-solid fa-wrench"></i>
+                            </label>
+                            <!-- Opção 11: Saúde -->
+                            <input type="radio" id="icon-saude" name="item-icon-radio" value="saude" class="icon-radio">
+                            <label for="icon-saude" class="icon-radio-label" title="Saúde/Remédios">
+                                <i class="fa-solid fa-pills"></i>
+                            </label>
+                            <!-- Opção 12: Música -->
+                            <input type="radio" id="icon-musica" name="item-icon-radio" value="musica" class="icon-radio">
+                            <label for="icon-musica" class="icon-radio-label" title="Música/Instrumentos">
+                                <i class="fa-solid fa-music"></i>
+                            </label>
+                            <!-- Opção 13: Câmera -->
+                            <input type="radio" id="icon-camera" name="item-icon-radio" value="camera" class="icon-radio">
+                            <label for="icon-camera" class="icon-radio-label" title="Câmeras/Fotografia">
+                                <i class="fa-solid fa-camera"></i>
+                            </label>
+                            <!-- Opção 14: Audiovisual -->
+                            <input type="radio" id="icon-audiovisual" name="item-icon-radio" value="audiovisual" class="icon-radio">
+                            <label for="icon-audiovisual" class="icon-radio-label" title="Acessórios Audiovisuais">
+                                <i class="fa-solid fa-headphones"></i>
+                            </label>
+                            <!-- Opção 15: Vestuário -->
+                            <input type="radio" id="icon-vestuario" name="item-icon-radio" value="vestuario" class="icon-radio">
+                            <label for="icon-vestuario" class="icon-radio-label" title="Vestuário/Moda">
+                                <i class="fa-solid fa-shirt"></i>
+                            </label>
+                            <!-- Opção 16: Esportes -->
+                            <input type="radio" id="icon-esporte" name="item-icon-radio" value="esporte" class="icon-radio">
+                            <label for="icon-esporte" class="icon-radio-label" title="Esportes/Fitness">
+                                <i class="fa-solid fa-volleyball"></i>
+                            </label>
+                            <!-- Opção 17: Beleza -->
+                            <input type="radio" id="icon-beleza" name="item-icon-radio" value="beleza" class="icon-radio">
+                            <label for="icon-beleza" class="icon-radio-label" title="Beleza/Cosméticos">
+                                <i class="fa-solid fa-spray-can"></i>
+                            </label>
+                            <!-- Opção 18: Relógio -->
+                            <input type="radio" id="icon-relogio" name="item-icon-radio" value="relogio" class="icon-radio">
+                            <label for="icon-relogio" class="icon-radio-label" title="Relógios/Acessórios">
+                                <i class="fa-solid fa-clock"></i>
+                            </label>
+                            <!-- Opção 19: Arte -->
+                            <input type="radio" id="icon-arte" name="item-icon-radio" value="arte" class="icon-radio">
+                            <label for="icon-arte" class="icon-radio-label" title="Arte/Material Artístico">
+                                <i class="fa-solid fa-palette"></i>
+                            </label>
+                            <!-- Opção 20: Pet -->
+                            <input type="radio" id="icon-pet" name="item-icon-radio" value="pet" class="icon-radio">
+                            <label for="icon-pet" class="icon-radio-label" title="Pet/Animais">
+                                <i class="fa-solid fa-paw"></i>
+                            </label>
+                        </div>
+                        <button type="button" class="carousel-nav-btn next" id="carousel-next">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -366,9 +627,30 @@
                     <input type="text" id="item-name" class="form-input-base" placeholder="Nome do item" required>
                 </div>
 
-                <!-- Loja (Limpo) -->
+                <!-- Loja (Com dropdown estilizado) -->
                 <div>
-                    <input type="text" id="store-name" class="form-input-base" placeholder="Nome da loja">
+                    <label for="store-name" class="block text-sm font-medium text-gray-700 mb-1">
+                        Loja
+                    </label>
+                    <div class="relative store-dropdown-container">
+                        <div class="relative flex items-center">
+                            <input type="text" 
+                                   id="store-name" 
+                                   class="form-input-base pl-9 pr-8" 
+                                   placeholder="Nome da loja"
+                                   autocomplete="off">
+                            <i class="fa-solid fa-store absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <button type="button" 
+                                    class="store-toggle absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                <i class="fa-solid fa-chevron-down text-[0.6rem] opacity-70"></i>
+                            </button>
+                        </div>
+                        <div class="store-menu hidden absolute left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border-x border-gray-100 max-h-48 overflow-y-auto z-10 overflow-hidden">
+                            <div class="store-options divide-y divide-gray-50">
+                                <!-- Preenchido dinamicamente com lojas existentes -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -400,6 +682,41 @@
                     <div>
                         <label for="tracking-code" class="block text-sm font-medium text-gray-700 mb-1">Rastreio</label>
                         <input type="text" id="tracking-code" class="form-input-base" placeholder="Código de Rastreio">
+                    </div>
+                </div>
+
+                <!-- Tipo de Rastreio e Link do Pedido -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="tracking-type" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Rastreio</label>
+                        <div class="flex gap-2">
+                            <select id="tracking-type" class="form-input-base flex-1">
+                                <option value="correios">Correios</option>
+                                <option value="jtexpress">JT Express</option>
+                                <option value="outro">Outro</option>
+                            </select>
+                            <input type="text" 
+                                   id="custom-tracking-type"
+                                   class="form-input-base w-full"
+                                   placeholder="Digite o tipo personalizado"
+                                   style="display: none;"
+                                   list="tracking-type-suggestions">
+                            <datalist id="tracking-type-suggestions">
+                                <!-- Será preenchido dinamicamente -->
+                            </datalist>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="order-link" class="block text-sm font-medium text-gray-700 mb-1">
+                            Link do Produto
+                        </label>
+                        <div class="relative">
+                            <input type="url" 
+                                   id="order-link" 
+                                   class="form-input-base pl-9" 
+                                   placeholder="Cole aqui o link do produto para tornar o título clicável">
+                            <i class="fa-solid fa-link absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -446,10 +763,70 @@
             let state = {
                 purchases: [], // Array principal de dados
                 filter: 'todos', // Filtro atual
+                storeFilter: '', // Filtro de loja
+                categoryFilter: '', // Filtro de categoria
+                showArchived: false, // Controle de arquivados
+                lastUsedValues: { // Armazena últimos valores usados
+                    store: '',
+                    trackingType: 'correios',
+                    icon: 'caixa'
+                }
             };
             const STORAGE_KEY = 'my_local_purchases';
 
             // --- Funções Principais ---
+
+            /**
+             * Atualiza a lista de sugestões de lojas
+             */
+            function updateSuggestions() {
+                const stores = new Set();
+                const trackingTypes = new Set(['correios', 'jtexpress']);
+                
+                // Coleta todas as lojas únicas do Firebase
+                state.purchases.forEach(purchase => {
+                    if (purchase.store && purchase.store.trim()) {
+                        stores.add(purchase.store.trim());
+                    }
+                    if (purchase.trackingType && 
+                        !['correios', 'jtexpress', 'outro'].includes(purchase.trackingType.toLowerCase())) {
+                        trackingTypes.add(purchase.trackingType);
+                    }
+                });
+
+                // Atualiza select de filtro de lojas
+                const storeFilter = document.getElementById('store-filter');
+                const currentValue = storeFilter.value;
+                storeFilter.innerHTML = '<option value="">Todas as lojas</option>' +
+                    Array.from(stores)
+                        .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+                        .map(store => `<option value="${escapeHTML(store)}">${escapeHTML(store)}</option>`)
+                        .join('');
+                storeFilter.value = currentValue;
+
+                // Atualiza datalist de tipos de rastreio
+                const trackingSuggestions = document.getElementById('tracking-type-suggestions');
+                trackingSuggestions.innerHTML = Array.from(trackingTypes)
+                    .sort()
+                    .map(type => `<option value="${escapeHTML(type)}">`)
+                    .join('');
+            }
+
+            /**
+             * Atualiza os contadores de itens
+             */
+            function updateCounters(filteredItems) {
+                const totalActive = state.purchases.filter(p => !p.archived).length;
+                const totalArchived = state.purchases.filter(p => p.archived).length;
+                
+                if (state.showArchived) {
+                    document.getElementById('total-count').textContent = totalArchived;
+                    document.getElementById('filtered-count').textContent = filteredItems.length;
+                } else {
+                    document.getElementById('total-count').textContent = totalActive;
+                    document.getElementById('filtered-count').textContent = filteredItems.length;
+                }
+            }
 
             /**
              * Inicializa a aplicação
@@ -457,12 +834,14 @@
             async function init() {
                 await loadPurchasesFromStorage();
                 addEventListeners();
+                setupCarousel(); // Inicializa o carrossel
                 
                 // Escuta mudanças em tempo real
                 db.ref('purchases').on('value', (snapshot) => {
                     const data = snapshot.val();
                     state.purchases = data ? Object.values(data) : [];
                     sortPurchases();
+                    updateSuggestions();
                     renderList();
                 });
             }
@@ -472,10 +851,23 @@
              */
             async function loadPurchasesFromStorage() {
                 try {
-                    const snapshot = await db.ref('purchases').once('value');
-                    const data = snapshot.val();
-                    state.purchases = data ? Object.values(data) : [];
+                    // Carrega as compras
+                    const purchasesSnapshot = await db.ref('purchases').once('value');
+                    const purchasesData = purchasesSnapshot.val();
+                    state.purchases = purchasesData ? Object.values(purchasesData) : [];
+
+                    // Carrega o state
+                    const stateSnapshot = await db.ref('state/lastUsedValues').once('value');
+                    const lastUsedValues = stateSnapshot.val();
+                    if (lastUsedValues) {
+                        state.lastUsedValues = {
+                            ...state.lastUsedValues,
+                            ...lastUsedValues
+                        };
+                    }
+
                     sortPurchases(); // Ordena ao carregar
+                    updateSuggestions(); // Atualiza as sugestões de lojas e tipos de rastreio
                     renderList(); // Atualiza a interface
                 } catch (error) {
                     console.error('Erro ao carregar compras:', error);
@@ -488,11 +880,15 @@
              */
             async function savePurchasesToStorage() {
                 try {
+                    // Salva as compras
                     const purchasesObject = {};
                     state.purchases.forEach(purchase => {
                         purchasesObject[purchase.id] = purchase;
                     });
                     await db.ref('purchases').set(purchasesObject);
+                    
+                    // Salva o state
+                    await db.ref('state/lastUsedValues').set(state.lastUsedValues);
                 } catch (error) {
                     console.error('Erro ao salvar compras:', error);
                     showToast('Erro ao salvar compras', 'bg-red-500');
@@ -512,10 +908,29 @@
                     savePurchasesToStorage(); // Salva se algum status mudou
                 }
 
-                const filteredPurchases = state.purchases.filter(item => {
-                    if (state.filter === 'todos') return true;
-                    return item.status === state.filter;
+                // Atualiza as sugestões antes de filtrar
+                updateSuggestions();
+
+                let filteredPurchases = state.purchases.filter(item => {
+                    // Filtro de status
+                    if (state.filter !== 'todos' && item.status !== state.filter) return false;
+                    
+                    // Filtro de loja
+                    if (state.storeFilter && (!item.store || item.store.trim().toLowerCase() !== state.storeFilter.trim().toLowerCase())) return false;
+                    
+                    // Filtro de categoria
+                    if (state.categoryFilter && (!item.icon || item.icon !== state.categoryFilter)) return false;
+                    
+                    // Filtro de arquivados
+                    if (state.showArchived) {
+                        return item.archived;
+                    } else {
+                        return !item.archived;
+                    }
                 });
+                
+                // Atualiza contadores
+                updateCounters(filteredPurchases);
 
                 if (state.purchases.length === 0) {
                     emptyState.classList.remove('hidden');
@@ -615,13 +1030,24 @@
                 // const purchaseDate = formatDate(item.purchaseDate); // (agora usado no purchaseSubText)
 
                 // Botão de rastreio
+                const getTrackingUrl = (type, code) => {
+                    switch (type) {
+                        case 'jtexpress':
+                            return `https://www.jtexpress.com.br/trajectoryQuery?waybillNo=${code}&type=0`;
+                        case 'correios':
+                            return `https://rastreamento.correios.com.br/app/index.php?objetos=${code}`;
+                        default:
+                            return '#';
+                    }
+                };
+
                 const trackingButtonHTML = item.trackingCode 
-                    ? `<a href="https://rastreamento.correios.com.br/app/index.php?objetos=${encodeURIComponent(item.trackingCode)}" 
+                    ? `<a href="${getTrackingUrl(item.trackingType || 'correios', encodeURIComponent(item.trackingCode))}" 
                           target="_blank" 
                           rel="noopener noreferrer"
                           class="flex items-center justify-center gap-2 w-full text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-2.5 rounded-lg transition-colors">
                           <i class="fa-solid fa-truck-fast w-4 h-4"></i>
-                          Rastrear Pedido
+                          Rastrear ${item.trackingType === 'jtexpress' ? 'JT Express' : item.trackingType === 'outro' ? 'Pedido' : 'Correios'}
                        </a>`
                     : '';
                     
@@ -642,24 +1068,40 @@
                     : '<div></div>'; // Placeholder vazio para manter o layout
 
                 return `
-                    <div class="bg-white rounded-2xl shadow-xl p-5 border border-gray-100 flex flex-col justify-between transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-teal-100/50">
+                                <div class="bg-white rounded-2xl shadow-xl p-5 border border-gray-100 flex flex-col justify-between transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-teal-100/50 ${item.archived ? 'opacity-75' : ''}">
                         <div>
                             <!-- Cabeçalho do Card -->
                             <div class="flex justify-between items-start mb-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="flex-shrink-0 w-8 h-8">${categoryIcon}</div>
+                                    <div class="flex-shrink-0 w-12 h-12 flex items-center justify-center text-xl">${categoryIcon}</div>
                                     <div class="flex-1 min-w-0">
-                                        <h3 class="text-lg font-bold text-gray-800 leading-tight truncate" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</h3>
+                                        <h3 class="text-lg font-bold text-gray-800 leading-tight truncate hover:text-teal-600 transition-colors cursor-pointer" 
+                                            title="${escapeHTML(item.name)}"
+                                            onclick="window.open('${item.orderLink || '#'}', '_blank')">${escapeHTML(item.name)}</h3>
                                         ${storeHTML}
                                     </div>
                                 </div>
-                                <!-- Badge de Status -->
-                                <span class="text-xs font-bold px-2.5 py-1 rounded-full ${statusClass} whitespace-nowrap ml-2">
-                                    ${escapeHTML(statusText)}
-                                </span>
-                            </div>
-                            
-                            <!-- Corpo do Card (Contadores) -->
+                                <!-- Badge de Status com Dropdown -->
+                                <div class="flex flex-col items-end gap-2">
+                                    <div class="relative status-dropdown-container">
+                                        <button class="status-toggle text-xs font-bold px-2.5 py-1 rounded-full ${statusClass} whitespace-nowrap hover:shadow-sm transition-all flex items-center gap-1.5" data-id="${item.id}">
+                                            ${escapeHTML(statusText)}
+                                            <i class="fa-solid fa-chevron-down text-[0.6rem] opacity-70"></i>
+                                        </button>
+                                        <div class="status-menu hidden absolute right-0 mt-1 bg-white rounded-lg shadow-lg border-x border-gray-100 min-w-[140px] z-10 overflow-hidden">
+                                            ${generateStatusOptions(item.status, item.id)}
+                                        </div>
+                                    </div>
+                                    ${item.status === 'Entregue' && !item.archived 
+                                        ? `<button data-id="${item.id}" class="archive-btn text-xs px-2 py-1 text-gray-600 hover:text-gray-900 font-medium">
+                                            <i class="fa-solid fa-box-archive"></i>
+                                            Arquivar
+                                        </button>`
+                                        : item.archived 
+                                            ? '<span class="text-xs font-medium text-gray-500">Arquivado</span>' 
+                                            : ''}
+                                </div>
+                            </div>                            <!-- Corpo do Card (Contadores) -->
                             <div class="grid grid-cols-2 gap-4 my-5 px-1">
                                 <!-- Lado Esquerdo: Countdown de Entrega -->
                                 <div class="border-r border-gray-200 pr-4">
@@ -722,6 +1164,90 @@
                 purchaseList.addEventListener('click', handleListActions);
                 filterContainer.addEventListener('click', handleFilterClick);
 
+                // Event listeners para o campo de loja com dropdown estilizado
+                const storeNameInput = document.getElementById('store-name');
+                const trackingTypeSelect = document.getElementById('tracking-type');
+                const storeToggle = document.querySelector('.store-toggle');
+                const storeMenu = document.querySelector('.store-menu');
+                const storeOptions = document.querySelector('.store-options');
+
+                // Função para atualizar as opções do dropdown de lojas
+                function updateStoreOptions() {
+                    const stores = new Set();
+                    state.purchases.forEach(purchase => {
+                        if (purchase.store && purchase.store.trim()) {
+                            stores.add(purchase.store.trim());
+                        }
+                    });
+
+                    storeOptions.innerHTML = Array.from(stores)
+                        .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+                        .map(store => `
+                            <div class="store-option px-3 py-2 cursor-pointer hover:bg-gray-50 text-sm text-gray-700">
+                                ${escapeHTML(store)}
+                            </div>
+                        `).join('');
+                }
+
+                // Toggle do dropdown
+                storeToggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    storeMenu.classList.toggle('hidden');
+                    updateStoreOptions(); // Atualiza as opções ao abrir
+                });
+
+                // Fecha o dropdown ao clicar fora
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.store-dropdown-container')) {
+                        storeMenu.classList.add('hidden');
+                    }
+                });
+
+                // Seleciona a loja ao clicar na opção
+                storeOptions.addEventListener('click', (e) => {
+                    const option = e.target.closest('.store-option');
+                    if (option) {
+                        const storeName = option.textContent.trim();
+                        storeNameInput.value = storeName;
+                        storeMenu.classList.add('hidden');
+                        
+                        // Lógica do Mercado Livre
+                        if (storeName.toLowerCase() === 'mercado livre') {
+                            let mlOption = Array.from(trackingTypeSelect.options)
+                                .find(opt => opt.value === 'Mercado Livre');
+                            
+                            if (!mlOption) {
+                                const outroOption = Array.from(trackingTypeSelect.options)
+                                    .find(opt => opt.value === 'outro');
+                                mlOption = new Option('Mercado Livre', 'Mercado Livre');
+                                trackingTypeSelect.insertBefore(mlOption, outroOption);
+                            }
+                            
+                            trackingTypeSelect.value = 'Mercado Livre';
+                            document.getElementById('custom-tracking-type').style.display = 'none';
+                        }
+                    }
+                });
+
+                // Atualiza opções quando o usuário digita
+                storeNameInput.addEventListener('input', (e) => {
+                    const value = e.target.value.toLowerCase().trim();
+                    const options = document.querySelectorAll('.store-option');
+                    
+                    options.forEach(option => {
+                        const text = option.textContent.toLowerCase();
+                        if (text.includes(value)) {
+                            option.style.display = 'block';
+                        } else {
+                            option.style.display = 'none';
+                        }
+                    });
+                    
+                    if (!storeMenu.classList.contains('hidden') && !value) {
+                        updateStoreOptions();
+                    }
+                });
+
                 // Event listeners para backup/restore
                 document.getElementById('backup-btn').addEventListener('click', createBackup);
                 document.getElementById('restore-btn').addEventListener('click', openRestoreModal);
@@ -734,7 +1260,125 @@
                     }
                 });
 
+                // Filtros de loja e categoria
+                const storeFilter = document.getElementById('store-filter');
+                const categoryFilter = document.getElementById('category-filter');
+                
+                storeFilter.addEventListener('change', (e) => {
+                    state.storeFilter = e.target.value;
+                    updateSuggestions(); // Atualiza as sugestões quando mudar o filtro
+                    renderList();
+                });
+                
+                categoryFilter.addEventListener('change', (e) => {
+                    state.categoryFilter = e.target.value;
+                    renderList();
+                });
+
+                // Inicializa as sugestões e o dropdown de lojas
+                updateSuggestions();
+                updateStoreOptions(); // Atualiza as opções do dropdown estilizado
+
+                // Gerencia o tipo de rastreio personalizado
+                const trackingType = document.getElementById('tracking-type');
+                const customTrackingType = document.getElementById('custom-tracking-type');
+                
+                trackingType.addEventListener('change', (e) => {
+                    const isCustom = e.target.value === 'outro';
+                    customTrackingType.style.display = isCustom ? 'block' : 'none';
+                    if (!isCustom) customTrackingType.value = '';
+                });
+
+                // Ao abrir o modal, reseta o campo personalizado
+                document.getElementById('open-modal-btn').addEventListener('click', () => {
+                    const isCustom = trackingType.value === 'outro';
+                    customTrackingType.style.display = isCustom ? 'block' : 'none';
+                });
+
+                // Toggle arquivados
+                const toggleArchivedBtn = document.getElementById('toggle-archived');
+                toggleArchivedBtn.addEventListener('click', () => {
+                    state.showArchived = !state.showArchived;
+                    toggleArchivedBtn.innerHTML = state.showArchived 
+                        ? '<i class="fa-solid fa-box-open"></i> Mostrar Ativos'
+                        : '<i class="fa-solid fa-box-archive"></i> Mostrar Arquivados';
+                    renderList();
+                });
+
                 // Handler para botões de restaurar e excluir backup
+                // Event listener para o dropdown de status nos cards
+                document.addEventListener('click', (e) => {
+                    const statusToggle = e.target.closest('.status-toggle');
+                    const statusOption = e.target.closest('.status-option');
+                    
+                    // Fecha todos os menus se clicar fora
+                    if (!statusToggle && !statusOption) {
+                        document.querySelectorAll('.status-menu').forEach(menu => {
+                            menu.classList.add('hidden');
+                        });
+                        return;
+                    }
+
+                    // Toggle do menu de status
+                    if (statusToggle) {
+                        const container = statusToggle.closest('.status-dropdown-container');
+                        const menu = container.querySelector('.status-menu');
+                        
+                        // Fecha outros menus abertos
+                        document.querySelectorAll('.status-menu').forEach(otherMenu => {
+                            if (otherMenu !== menu) {
+                                otherMenu.classList.add('hidden');
+                            }
+                        });
+
+                        menu.classList.toggle('hidden');
+                        e.stopPropagation();
+                    }
+
+                    // Clique em uma opção do menu
+                    if (statusOption) {
+                        const newStatus = statusOption.dataset.status;
+                        const itemId = statusOption.dataset.id;
+                        
+                        // Atualiza o status
+                        updateItemStatus(itemId, newStatus);
+                        
+                        // Fecha o menu
+                        statusOption.closest('.status-menu').classList.add('hidden');
+                    }
+                });
+
+                // Função para atualizar o status de um item
+                async function updateItemStatus(itemId, newStatus) {
+                    const index = state.purchases.findIndex(item => item.id === itemId);
+                    if (index === -1) return;
+
+                    try {
+                        // Se o novo status for 'Entregue', marca como arquivado também
+                        const shouldArchive = newStatus === 'Entregue';
+                        
+                        // Atualiza o item
+                        state.purchases[index] = {
+                            ...state.purchases[index],
+                            status: newStatus,
+                            archived: shouldArchive || state.purchases[index].archived,
+                            updatedAt: firebase.database.ServerValue.TIMESTAMP
+                        };
+
+                        await savePurchasesToStorage();
+                        sortPurchases();
+                        renderList();
+                        
+                        const statusInfo = getStatusInfo(newStatus);
+                        showToast(`Status atualizado para ${statusInfo.statusText}!`, 
+                                newStatus === 'Entregue' ? 'bg-green-500' : 
+                                newStatus === 'Cancelado' ? 'bg-red-500' : 'bg-teal-500');
+                    } catch (error) {
+                        console.error('Erro ao atualizar status:', error);
+                        showToast('Erro ao atualizar status', 'bg-red-500');
+                    }
+                }
+
                 document.getElementById('backups-list').addEventListener('click', async (e) => {
                     const button = e.target.closest('button[data-action]');
                     if (!button) return;
@@ -794,34 +1438,75 @@
                 
                 const editId = editIdInput.value;
 
+                let trackingType = document.getElementById('tracking-type').value;
+                if (trackingType === 'outro') {
+                    const customType = document.getElementById('custom-tracking-type').value.trim();
+                    if (customType) {
+                        trackingType = customType;
+                        // Salva o novo tipo de rastreio personalizado
+                        await firebaseService.saveCustomTrackingType(customType);
+                        await updateTrackingTypeSuggestions(); // Atualiza a lista de sugestões
+                    }
+                }
+
+                // Atualiza os últimos valores usados
+                state.lastUsedValues = {
+                    ...state.lastUsedValues,
+                    store: formData.store,
+                    trackingType,
+                    icon: formData.icon
+                };
+
+                const formDataExtended = {
+                    ...formData,
+                    trackingType,
+                    orderLink: document.getElementById('order-link').value.trim(),
+                    archived: false
+                };
+
                 if (editId) {
                     // LÓGICA DE ATUALIZAÇÃO DE STATUS
                     const today = getTodayDate();
-                    const isOverdue = formData.deliveryDate < today;
-                    const isFinalStatus = formData.status === 'Entregue' || formData.status === 'Cancelado';
+                    const isOverdue = formDataExtended.deliveryDate < today;
+                    const isFinalStatus = formDataExtended.status === 'Entregue' || formDataExtended.status === 'Cancelado';
 
                     if (isOverdue && !isFinalStatus) {
-                        formData.status = 'Atrasado'; 
-                    } else if (formData.status === 'Atrasado' && !isOverdue) {
-                        formData.status = 'Aguardando Envio';
+                        formDataExtended.status = 'Atrasado'; 
+                    } else if (formDataExtended.status === 'Atrasado' && !isOverdue) {
+                        formDataExtended.status = 'Aguardando Envio';
                     }
                     // Atualiza o select do status no formulário caso tenha mudado
-                    document.getElementById('item-status').value = formData.status;
+                    document.getElementById('item-status').value = formDataExtended.status;
+
+                    // Se o status for Entregue, marca como arquivado automaticamente
+                    if (formDataExtended.status === 'Entregue') {
+                        formDataExtended.archived = true;
+                    }
 
                     const index = state.purchases.findIndex(item => item.id === editId);
                     if (index !== -1) {
+                        // Atualiza o item localmente com todos os novos dados
                         state.purchases[index] = { 
                             ...state.purchases[index], 
-                            ...formData,
+                            ...formDataExtended,
                             updatedAt: firebase.database.ServerValue.TIMESTAMP 
                         };
-                        await savePurchasesToStorage();
-                        showToast('Compra atualizada com sucesso!');
+                        
+                        // Salva no Firebase e força atualização imediata da interface
+                        try {
+                            await savePurchasesToStorage();
+                            sortPurchases(); // Reordena a lista se necessário
+                            renderList(); // Força atualização da UI
+                            showToast('Compra atualizada com sucesso!');
+                        } catch (error) {
+                            console.error('Erro ao atualizar compra:', error);
+                            showToast('Erro ao atualizar compra', 'bg-red-500');
+                        }
                     }
                 } else {
                     const newItem = {
                         id: Date.now().toString(),
-                        ...formData,
+                        ...formDataExtended,
                         createdAt: firebase.database.ServerValue.TIMESTAMP
                     };
                     state.purchases.push(newItem);
@@ -835,13 +1520,14 @@
 
             /**
              * (*** ATUALIZADO ***)
-             * Manipula cliques na lista (Editar/Excluir/Entregue)
+             * Manipula cliques na lista (Editar/Excluir/Entregue/Arquivar)
              */
             async function handleListActions(e) {
                 const target = e.target;
                 const editBtn = target.closest('.edit-btn');
                 const deleteBtn = target.closest('.delete-btn');
-                const deliverBtn = target.closest('.deliver-btn'); // NOVO
+                const deliverBtn = target.closest('.deliver-btn');
+                const archiveBtn = target.closest('.archive-btn');
 
                 if (editBtn) {
                     const id = editBtn.dataset.id;
@@ -863,17 +1549,40 @@
                     }
                 }
 
+                // Manipula o botão de arquivar
+                if (archiveBtn) {
+                    const id = archiveBtn.dataset.id;
+                    const index = state.purchases.findIndex(p => p.id === id);
+                    
+                    if (index !== -1) {
+                        state.purchases[index].archived = true;
+                        try {
+                            await savePurchasesToStorage();
+                            showToast('Compra arquivada!', 'bg-gray-500');
+                            renderList();
+                        } catch (error) {
+                            console.error('Erro ao arquivar:', error);
+                            showToast('Erro ao arquivar compra', 'bg-red-500');
+                        }
+                    }
+                }
+
                 // (NOVO) Manipulador do botão "Entregue"
                 if (deliverBtn) {
                     const id = deliverBtn.dataset.id;
                     const index = state.purchases.findIndex(p => p.id === id);
                     if (index !== -1) {
-                        state.purchases[index].status = 'Entregue';
-                        state.purchases[index].updatedAt = firebase.database.ServerValue.TIMESTAMP;
+                        // Atualiza o status e marca como arquivado automaticamente
+                        state.purchases[index] = {
+                            ...state.purchases[index],
+                            status: 'Entregue',
+                            archived: true,
+                            updatedAt: firebase.database.ServerValue.TIMESTAMP
+                        };
                         sortPurchases(); // Re-ordena (item vai para o fim)
                         try {
                             await savePurchasesToStorage();
-                            showToast('Compra marcada como entregue!', 'bg-green-500');
+                            showToast('Compra marcada como entregue e arquivada!', 'bg-green-500');
                         } catch (error) {
                             console.error('Erro ao marcar como entregue:', error);
                             showToast('Erro ao marcar como entregue', 'bg-red-500');
@@ -941,6 +1650,9 @@
                     document.getElementById('delivery-date').value = item.deliveryDate;
                     document.getElementById('item-status').value = item.status;
                     document.getElementById('tracking-code').value = item.trackingCode;
+                    document.getElementById('tracking-type').value = item.trackingType || 'correios';
+                    document.getElementById('order-link').value = item.orderLink || '';
+                    
                     // Lógica para marcar o radio button correto
                     const iconId = `icon-${item.icon || 'caixa'}`;
                     const iconRadio = document.getElementById(iconId);
@@ -949,12 +1661,31 @@
                     } else {
                         document.getElementById('icon-caixa').checked = true; // Fallback
                     }
+
+                    // Salva os valores para uso futuro
+                    state.lastUsedValues = {
+                        ...state.lastUsedValues,
+                        store: item.store,
+                        trackingType: item.trackingType || state.lastUsedValues.trackingType,
+                        icon: item.icon || state.lastUsedValues.icon
+                    };
                 } else {
-                    modalTitle.textContent = 'Nova Compra'; // Título corrigido
+                    modalTitle.textContent = 'Nova Compra';
                     editIdInput.value = '';
                     const today = getTodayDate();
                     document.getElementById('purchase-date').value = today;
-                    document.getElementById('icon-caixa').checked = true; // Padrão
+                    
+                    // Usa os últimos valores como padrão
+                    document.getElementById('store-name').value = '';
+                    document.getElementById('tracking-type').value = state.lastUsedValues.trackingType;
+                    
+                    const iconId = `icon-${state.lastUsedValues.icon}`;
+                    const iconRadio = document.getElementById(iconId);
+                    if (iconRadio) {
+                        iconRadio.checked = true;
+                    } else {
+                        document.getElementById('icon-caixa').checked = true;
+                    }
                 }
 
                 modal.classList.remove('hidden');
@@ -1209,13 +1940,83 @@
                     case 'livro':
                         iconClass = 'fa-book';
                         break;
-
+                    case 'computador':
+                        iconClass = 'fa-computer';
+                        break;
+                    case 'game':
+                        iconClass = 'fa-gamepad';
+                        break;
+                    case 'casa':
+                        iconClass = 'fa-house';
+                        break;
+                    case 'ferramenta':
+                        iconClass = 'fa-wrench';
+                        break;
+                    case 'saude':
+                        iconClass = 'fa-pills';
+                        break;
+                    case 'musica':
+                        iconClass = 'fa-music';
+                        break;
+                    case 'camera':
+                        iconClass = 'fa-camera';
+                        break;
+                    case 'audiovisual':
+                        iconClass = 'fa-headphones';
+                        break;
+                    case 'vestuario':
+                        iconClass = 'fa-shirt';
+                        break;
+                    case 'esporte':
+                        iconClass = 'fa-volleyball';
+                        break;
+                    case 'beleza':
+                        iconClass = 'fa-spray-can';
+                        break;
+                    case 'relogio':
+                        iconClass = 'fa-clock';
+                        break;
+                    case 'arte':
+                        iconClass = 'fa-palette';
+                        break;
+                    case 'pet':
+                        iconClass = 'fa-paw';
+                        break;
                     case 'caixa':
                     default:
                         iconClass = 'fa-box';
                         break;
                 }
                 return `<i class="fa-solid ${iconClass} ${cssClass}"></i>`;
+            }
+
+            /**
+             * Gera o menu de opções de status, excluindo o status atual
+             * @param {string} currentStatus - Status atual do item
+             * @returns {string} HTML do menu de opções
+             */
+            function generateStatusOptions(currentStatus, itemId) {
+                const allStatuses = [
+                    'Aguardando Envio',
+                    'Em Trânsito',
+                    'Atrasado',
+                    'Entregue',
+                    'Cancelado'
+                ];
+                
+                // Filtra o status atual
+                const availableStatuses = allStatuses.filter(status => status !== currentStatus);
+                
+                return availableStatuses.map(status => {
+                    const { statusClass, statusText } = getStatusInfo(status);
+                    return `
+                        <button class="status-option w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${statusClass}"
+                                data-status="${status}"
+                                data-id="${itemId}">
+                            ${statusText}
+                        </button>
+                    `;
+                }).join('');
             }
 
             /**
@@ -1255,6 +2056,48 @@
             }
             
             /**
+             * Controla o carrossel de ícones
+             * @param {number} direction - Direção do scroll (-1 para esquerda, 1 para direita)
+             */
+            function setupCarousel() {
+                const container = document.getElementById('icon-carousel-content');
+                const prevBtn = document.getElementById('carousel-prev');
+                const nextBtn = document.getElementById('carousel-next');
+                const itemWidth = 56; // Largura de um item (3.5rem)
+                const itemsPerPage = 5; // Número de itens visíveis por vez
+                const scrollAmount = itemWidth * itemsPerPage; // Scroll de 5 itens por vez
+
+                function scrollCarousel(direction) {
+                    const currentScroll = container.scrollLeft;
+                    let targetScroll = currentScroll + (scrollAmount * direction);
+
+                    // Calcula o máximo de scroll possível
+                    const maxScroll = container.scrollWidth - container.clientWidth;
+
+                    // Se chegamos ao final, voltamos ao início
+                    if (targetScroll > maxScroll) {
+                        targetScroll = 0;
+                    }
+                    // Se estamos no início e voltamos, vamos para o final
+                    else if (targetScroll < 0) {
+                        // Ajusta para o último grupo completo de itens
+                        targetScroll = Math.floor(maxScroll / scrollAmount) * scrollAmount;
+                        if (targetScroll < maxScroll) {
+                            targetScroll = maxScroll;
+                        }
+                    }
+
+                    container.scrollTo({
+                        left: targetScroll,
+                        behavior: 'smooth'
+                    });
+                }
+
+                prevBtn.addEventListener('click', () => scrollCarousel(-1));
+                nextBtn.addEventListener('click', () => scrollCarousel(1));
+            }
+
+            /**
              * Mostra uma mensagem de notificação (toast)
              * @param {string} message - A mensagem a ser exibida
              * @param {string} [bgColor='bg-teal-500'] - Cor de fundo do toast
@@ -1279,7 +2122,59 @@
                 }, 3000);
             }
 
+            /**
+             * Atualiza a lista de sugestões de tipos de rastreio
+             */
+            async function updateTrackingTypeSuggestions() {
+                const customTypes = await firebaseService.getCustomTrackingTypes();
+                const datalist = document.getElementById('tracking-type-suggestions');
+                
+                // Limpa a lista atual
+                datalist.innerHTML = '';
+                
+                // Adiciona os tipos personalizados como opções
+                customTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    datalist.appendChild(option);
+                });
+
+                // Atualiza também o select principal
+                const trackingTypeSelect = document.getElementById('tracking-type');
+                const currentValue = trackingTypeSelect.value;
+                
+                // Remove opções personalizadas antigas
+                Array.from(trackingTypeSelect.options).forEach(option => {
+                    if (!['correios', 'jtexpress', 'outro'].includes(option.value)) {
+                        trackingTypeSelect.removeChild(option);
+                    }
+                });
+
+                // Adiciona os tipos personalizados como opções no select
+                customTypes.forEach(type => {
+                    const exists = Array.from(trackingTypeSelect.options).some(opt => opt.value === type);
+                    if (!exists) {
+                        const option = document.createElement('option');
+                        option.value = type;
+                        option.textContent = type;
+                        // Insere antes da opção "Outro"
+                        const outroOption = Array.from(trackingTypeSelect.options).find(opt => opt.value === 'outro');
+                        trackingTypeSelect.insertBefore(option, outroOption);
+                    }
+                });
+
+                // Restaura o valor selecionado
+                trackingTypeSelect.value = currentValue;
+            }
+
             // --- Inicializa a Aplicação ---
+            async function init() {
+                setupCarousel();
+                addEventListeners();
+                await loadPurchasesFromStorage();
+                await updateTrackingTypeSuggestions(); // Carrega os tipos de rastreio personalizados
+            }
+
             init();
         });
     </script>
