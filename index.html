@@ -2322,7 +2322,16 @@
 
             function formatDate(dateString) {
                 if (!dateString) return 'N/A';
-                const [year, month, day] = dateString.split('-');
+                let date = new Date(dateString + 'T00:00:00');
+                
+                // Se for domingo, ajusta para segunda-feira
+                if (date.getDay() === 0) {
+                    date.setDate(date.getDate() + 1);
+                }
+                
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
                 return `${day}/${month}/${year}`;
             }
 
