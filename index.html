@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rastreador de Compras</title>
+    <!-- 1. Carrega o TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Carrega a fonte Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- 3. Carrega o Font Awesome (para ícones estáveis) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- 4. Favicon temático (caixa) -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M85,30 H15 C10,30 10,30 10,35 L10,85 C10,90 10,90 15,90 H85 C90,90 90,90 90,85 L90,35 C90,30 90,30 85,30 Z' fill='%2314b8a6'/%3E%3Cpath d='M10,35 L50,60 L90,35 M50,60 L50,90' stroke='%23f0fdfa' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M30,20 L70,20 L70,30 L30,30 Z' fill='%2314b8a6'/%3E%3Cpath d='M70,20 L90,35' stroke='%2314b8a6' stroke-width='2'/%3E%3Cpath d='M30,20 L10,35' stroke='%2314b8a6' stroke-width='2'/%3E%3C/svg%3E">
+
+    <!-- 5. Estilos customizados e configuração do Tailwind -->
+    <style>
+        /* Define a fonte padrão para todo o corpo */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Configurações do Tailwind */
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        orange: tailwind.colors.orange,
+                    },
+                },
+            },
+        };
+
+        /* Animação de fade-in para o modal */
+        .modal-fade-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .modal-fade-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: all 0.2s ease-out;
+        }
+        .modal-fade-leave {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .modal-fade-leave-active {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.2s ease-in;
+        }
+
+        /* Garante que os botões de filtro não quebrem a linha */
+        /* Permite rolagem horizontal em telas pequenas */
+        #filter-container {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #filter-container::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+        /* --- ESTILOS PARA O MODAL (UX 10/10) --- */
+
+        /* Estilo para o seletor de ícone visual (radio) */
+        .icon-radio-label {
+            display: inline-flex; /* Alterado para inline-flex */
+            align-items: center; /* Alinha o ícone */
+            justify-content: center; /* Centraliza o ícone */
+            width: 3.5rem; /* 56px */
+            height: 3.5rem; /* 56px */
+            border: 2px solid transparent;
+            border-radius: 0.75rem; /* 12px */
+            background-color: #f3f4f6; /* bg-gray-100 */
+            color: #4b5563; /* text-gray-600 */
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            position: relative; /* Para o tooltip */
+        }
+        .icon-radio-label:hover {
+            background-color: #e5e7eb; /* bg-gray-200 */
+        }
+        
+        /* Ajuste de tamanho do ícone Font Awesome */
+        .icon-radio-label .fa-solid {
+            font-size: 1.5rem; /* 24px */
+        }
+
+        /* Estilo para o radio checked */
+        .icon-radio:checked + .icon-radio-label {
+            border-color: #0d9488; /* border-teal-600 */
+            background-color: #f0fdfa; /* bg-teal-50 */
+            color: #0d9488; /* text-teal-600 */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* (IMPORTANTE) Esconde o radio button real */
+        .icon-radio {
+            display: none;
+        }
+
+        /* Estilo padrão para inputs do formulário */
+        .form-input-base {
+            width: 100%;
+            background-color: #f3f4f6; /* bg-gray-100 */
+            border: 2px solid #f3f4f6; /* bg-gray-100 */
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 0.75rem 1rem; /* py-3 px-4 */
+            color: #111827; /* text-gray-900 */
+            transition: all 0.2s ease-in-out;
+        }
+        .form-input-base:focus {
+            background-color: #ffffff;
+            border-color: #14b8a6; /* ring-teal-500 */
+            box-shadow: 0 0 0 2px #a7f3d0; /* focus:ring-teal-200 */
+            outline: none;
+        }
+
+    </style>
+</head>
+<body class="bg-blue-50 text-gray-900">
+
+    <!-- Container Principal -->
+    <div class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+
+        <!-- Cabeçalho -->
+        <header class="flex flex-col sm:flex-row justify-between items-center mb-10">
+            <!-- Título com Gradiente -->
+            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-500 mb-4 sm:mb-0">
+                Meu Rastreador de Compras
+            </h1>
+            <!-- Botão Adicionar -->
+            <button id="open-modal-btn" class="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:from-teal-600 hover:to-cyan-700 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-cyan-200">
+                <i class="fa-solid fa-plus w-5 h-5"></i>
+                Adicionar Compra
+            </button>
+        </header>
+
+        <!-- Filtros (Pílulas) -->
+        <div class="mb-8">
+            <div id="filter-container" class="flex items-center gap-2 pb-2 overflow-x-auto">
+                <button 
+                    data-filter="todos" 
+                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-bold border transition-all duration-200 cursor-pointer bg-teal-600 text-white border-transparent shadow">
+                    Todos
+                </button>
+                <button 
+                    data-filter="Aguardando Envio" 
+                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                    Aguardando Envio
+                </button>
+                <button 
+                    data-filter="Em Trânsito" 
+                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                    Em Trânsito
+                </button>
+                <button 
+                    data-filter="Atrasado" 
+                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                    Atrasado
+                </button>
+                <button 
+                    data-filter="Entregue" 
+                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                    Entregue
+                </button>
+                <button 
+                    data-filter="Cancelado" 
+                    class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                    Cancelado
+                </button>
+            </div>
+        </div>
+
+        <!-- Lista de Compras (CRUD - Read) -->
+        <main id="purchase-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+            <!-- Os cards de compra serão inseridos aqui pelo JavaScript -->
+        </main>
+
+        <!-- Mensagem de Lista Vazia -->
+        <div id="empty-state" class="text-center text-gray-500 mt-16 hidden">
+            <i class="fa-solid fa-shopping-bag fa-4x mx-auto text-teal-400 opacity-80"></i>
+            <h3 class="mt-6 text-xl font-semibold text-gray-700">Nenhuma compra encontrada</h3>
+            <p class="mt-1 text-base text-gray-500">Comece adicionando uma nova compra para rastreá-la!</p>
+        </div>
+    </div>
+
+    <!-- Modal (CRUD - Create/Update) - Limpo -->
+    <div id="purchase-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden modal-fade-enter">
+        <div class="bg-white w-full max-w-lg rounded-xl shadow-2xl p-6 sm:p-8 relative transform transition-all">
+            
+            <!-- Botão de Fechar o Modal -->
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fa-solid fa-xmark w-6 h-6"></i>
+            </button>
+
+            <!-- Título do Modal -->
+            <h2 id="modal-title" class="text-2xl font-bold text-gray-800 mb-6">Nova Compra</h2>
+
+            <!-- Formulário -->
+            <form id="purchase-form" class="space-y-5">
+                <!-- ID oculto para edição -->
+                <input type="hidden" id="edit-id">
+
+                <!-- Seletor de Ícone Visual (SEM radio buttons visíveis) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
+                    <div id="icon-selector" class="flex flex-wrap gap-3">
+                        <!-- Opção 1: Caixa -->
+                        <input type="radio" id="icon-caixa" name="item-icon-radio" value="caixa" class="icon-radio" checked>
+                        <label for="icon-caixa" class="icon-radio-label" title="Caixa">
+                            <i class="fa-solid fa-box"></i>
+                        </label>
+                        <!-- Opção 2: Presente -->
+                        <input type="radio" id="icon-presente" name="item-icon-radio" value="presente" class="icon-radio">
+                        <label for="icon-presente" class="icon-radio-label" title="Presente">
+                            <i class="fa-solid fa-gift"></i>
+                        </label>
+                        <!-- Opção 3: Eletrônico -->
+                        <input type="radio" id="icon-eletronico" name="item-icon-radio" value="eletronico" class="icon-radio">
+                        <label for="icon-eletronico" class="icon-radio-label" title="Eletrônico">
+                             <i class="fa-solid fa-mobile-screen"></i>
+                        </label>
+                         <!-- Opção 4: Roupas -->
+                        <input type="radio" id="icon-roupa" name="item-icon-radio" value="roupa" class="icon-radio">
+                        <label for="icon-roupa" class="icon-radio-label" title="Roupas/Sacola">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                        </label>
+                        <!-- Opção 5: Comida -->
+                        <input type="radio" id="icon-comida" name="item-icon-radio" value="comida" class="icon-radio">
+                        <label for="icon-comida" class="icon-radio-label" title="Comida/Mercado">
+                            <i class="fa-solid fa-utensils"></i>
+                        </label>
+                        <!-- Opção 6: Livro -->
+                        <input type="radio" id="icon-livro" name="item-icon-radio" value="livro" class="icon-radio">
+                        <label for="icon-livro" class="icon-radio-label" title="Livro">
+                            <i class="fa-solid fa-book"></i>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Nome do Item (Limpo) -->
+                <div>
+                    <input type="text" id="item-name" class="form-input-base" placeholder="Nome do item" required>
+                </div>
+
+                <!-- Loja (Limpo) -->
+                <div>
+                    <input type="text" id="store-name" class="form-input-base" placeholder="Nome da loja">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Data da Compra (Limpo) -->
+                    <div>
+                        <label for="purchase-date" class="block text-sm font-medium text-gray-700 mb-1">Compra</label>
+                        <input type="date" id="purchase-date" class="form-input-base" required>
+                    </div>
+                    <!-- Previsão de Entrega (Limpo) -->
+                    <div>
+                        <label for="delivery-date" class="block text-sm font-medium text-gray-700 mb-1">Entrega</label>
+                        <input type="date" id="delivery-date" class="form-input-base" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Status (Limpo) -->
+                    <div>
+                        <label for="item-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="item-status" class="form-input-base" required>
+                            <option value="Aguardando Envio">Aguardando Envio</option>
+                            <option value="Em Trânsito">Em Trânsito</option>
+                            <option value="Atrasado">Atrasado</option>
+                            <option value="Entregue">Entregue</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                    <!-- Rastreio (Limpo) -->
+                    <div>
+                        <label for="tracking-code" class="block text-sm font-medium text-gray-700 mb-1">Rastreio</label>
+                        <input type="text" id="tracking-code" class="form-input-base" placeholder="Código de Rastreio">
+                    </div>
+                </div>
+
+                <!-- Botões do Formulário -->
+                <div class="flex justify-end gap-4 pt-4">
+                    <button type="button" id="cancel-btn" class="px-5 py-2.5 rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 font-medium transition-colors">
+                        Cancelar
+                    </button>
+                    <!-- Botão Salvar com a nova cor -->
+                    <button type="submit" id="save-btn" class="px-5 py-2.5 rounded-lg text-white bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 font-medium transition-colors shadow hover:shadow-lg">
+                        Salvar Compra
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Mensagem de Confirmação (Toast) -->
+    <div id="toast" class="fixed bottom-10 right-10 flex items-center gap-3 bg-teal-500 text-white px-5 py-3 rounded-lg shadow-xl transition-all duration-300 translate-x-[200%]">
+        <i class="fa-solid fa-circle-check w-5 h-5"></i>
+        <span id="toast-message" class="font-medium">Ação completada!</span>
+    </div>
+
+
+    <!-- 4. JavaScript da Aplicação -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Seletores do DOM ---
+            const purchaseList = document.getElementById('purchase-list');
+            const emptyState = document.getElementById('empty-state');
+            const modal = document.getElementById('purchase-modal');
+            const form = document.getElementById('purchase-form');
+            const modalTitle = document.getElementById('modal-title');
+            const editIdInput = document.getElementById('edit-id');
+            const openModalBtn = document.getElementById('open-modal-btn');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const cancelBtn = document.getElementById('cancel-btn');
+            const filterContainer = document.getElementById('filter-container');
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+
+            // --- Variáveis de Estado ---
+            let state = {
+                purchases: [], // Array principal de dados
+                filter: 'todos', // Filtro atual
+            };
+            const STORAGE_KEY = 'my_local_purchases';
+
+            // --- Funções Principais ---
+
+            /**
+             * Inicializa a aplicação
+             */
+            function init() {
+                loadPurchasesFromStorage();
+                addEventListeners();
+                renderList();
+            }
+
+            /**
+             * Carrega os dados do localStorage para o estado
+             */
+            function loadPurchasesFromStorage() {
+                const data = localStorage.getItem(STORAGE_KEY);
+                state.purchases = data ? JSON.parse(data) : [];
+                sortPurchases(); // Ordena ao carregar
+            }
+
+            /**
+             * Salva o estado atual no localStorage
+             */
+            function savePurchasesToStorage() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state.purchases));
+            }
+
+            /**
+             * Renderiza a lista de compras na tela
+             */
+            function renderList() {
+                purchaseList.innerHTML = '';
+
+                // Verifica e atualiza status de atraso antes de renderizar
+                const statusChanged = checkAndUpdateStatus();
+                if (statusChanged) {
+                    sortPurchases(); // Re-ordena se o status mudou (ex: Atrasado)
+                    savePurchasesToStorage(); // Salva se algum status mudou
+                }
+
+                const filteredPurchases = state.purchases.filter(item => {
+                    if (state.filter === 'todos') return true;
+                    return item.status === state.filter;
+                });
+
+                if (state.purchases.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    purchaseList.classList.add('hidden');
+                } else {
+                    emptyState.classList.add('hidden');
+                    purchaseList.classList.remove('hidden');
+                }
+
+                filteredPurchases.forEach(item => {
+                    const card = createPurchaseCard(item);
+                    purchaseList.innerHTML += card;
+                });
+            }
+
+            /**
+             * Verifica se alguma compra está atrasada e atualiza o status
+             * Também reverte o status se a data for corrigida
+             * @returns {boolean} - Retorna true se algum status foi alterado
+             */
+            function checkAndUpdateStatus() {
+                const today = getTodayDate(); // CORREÇÃO: Usa a data local
+                let statusChanged = false;
+
+                state.purchases.forEach(item => {
+                    const isOverdue = item.deliveryDate < today;
+                    const isFinalStatus = item.status === 'Entregue' || item.status === 'Cancelado';
+
+                    // LÓGICA 1: Se deve ser marcado como Atrasado
+                    if (isOverdue && !isFinalStatus) {
+                        if (item.status !== 'Atrasado') {
+                            item.status = 'Atrasado';
+                            statusChanged = true;
+                        }
+                    // LÓGICA 2: Se estava Atrasado, mas a data foi corrigida para hoje ou futuro
+                    } else if (item.status === 'Atrasado' && !isOverdue) {
+                        // Reverte para um status seguro
+                        item.status = 'Aguardando Envio'; 
+                        statusChanged = true;
+                    }
+                });
+                return statusChanged;
+            }
+
+            /**
+             * Cria o HTML para um card de compra (DESIGN REVITALIZADO)
+             * @param {object} item - O objeto da compra
+             * @returns {string} - O HTML do card
+             */
+            function createPurchaseCard(item) {
+                // Info de Status (para o badge)
+                const { statusClass, statusText, statusColorClass } = getStatusInfo(item.status);
+                // Ícone de Categoria (para o ícone principal)
+                const categoryIcon = getCategoryIcon(item.icon, 'text-teal-600 w-7 h-7'); // Classe base
+
+                // --- Lógica dos Contadores de Data ---
+                const today = getTodayDate();
+                
+                // 1. Contador de Tempo de Compra
+                const daysSincePurchase = calculateDaysDifference(today, item.purchaseDate);
+                let purchaseDaysText = ''; // Texto principal
+                let purchaseSubText = `(em ${formatDate(item.purchaseDate)})`; // Texto secundário (data)
+
+                if (daysSincePurchase < 0) {
+                    purchaseDaysText = `Compra Futura`;
+                } else if (daysSincePurchase === 0) {
+                    purchaseDaysText = `Comprado Hoje!`; 
+                } else if (daysSincePurchase === 1) {
+                    purchaseDaysText = `1 Dia`; // Singular
+                } else {
+                    purchaseDaysText = `${daysSincePurchase} Dias`; // Plural
+                }
+                
+                // 2. Contador de Entrega (Countdown)
+                const daysToDelivery = calculateDaysDifference(item.deliveryDate, today);
+                let deliveryTimeHTML = '';
+                let deliveryColorClass = 'text-gray-800'; // Cor padrão do countdown
+                
+                if (item.status === 'Entregue' || item.status === 'Cancelado') {
+                    deliveryTimeHTML = item.status; // Mostra o status final
+                    deliveryColorClass = 'text-gray-500';
+                } else if (daysToDelivery > 0) {
+                    deliveryTimeHTML = `Faltam ${daysToDelivery} ${daysToDelivery === 1 ? 'dia' : 'dias'}`;
+                    deliveryColorClass = 'text-gray-800';
+                } else if (daysToDelivery === 0) {
+                    deliveryTimeHTML = `Entrega Hoje!`;
+                    deliveryColorClass = 'text-cyan-600';
+                } else {
+                    // Atrasado
+                    const daysLate = Math.abs(daysToDelivery);
+                    deliveryTimeHTML = `+${daysLate} ${daysLate === 1 ? 'dia' : 'dias'}`;
+                    deliveryColorClass = 'text-red-600'; // Atrasado (vermelho)
+                }
+                
+                // Datas formatadas
+                const deliveryDate = formatDate(item.deliveryDate);
+                // const purchaseDate = formatDate(item.purchaseDate); // (agora usado no purchaseSubText)
+
+                // Botão de rastreio
+                const trackingButtonHTML = item.trackingCode 
+                    ? `<a href="https://rastreamento.correios.com.br/app/index.php?objetos=${encodeURIComponent(item.trackingCode)}" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          class="flex items-center justify-center gap-2 w-full text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-2.5 rounded-lg transition-colors">
+                          <i class="fa-solid fa-truck-fast w-4 h-4"></i>
+                          Rastrear Pedido
+                       </a>`
+                    : '';
+                    
+                // Ícone da Loja
+                const storeHTML = item.store 
+                    ? `<p class="text-sm text-gray-500 flex items-center gap-1.5">
+                           <i class="fa-solid fa-store w-4 h-4 text-gray-400"></i>
+                           <span>${escapeHTML(item.store)}</span>
+                       </p>`
+                    : '';
+                
+                // (*** NOVO ***) Botão "Marcar como Entregue"
+                const deliverButtonHTML = (item.status !== 'Entregue' && item.status !== 'Cancelado')
+                    ? `<button data-id="${item.id}" class="deliver-btn flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-200 px-3 py-1.5 rounded-md transition-colors">
+                           <i class="fa-solid fa-check-double w-4 h-4"></i>
+                           Entregue
+                       </button>`
+                    : '<div></div>'; // Placeholder vazio para manter o layout
+
+                return `
+                    <div class="bg-white rounded-2xl shadow-xl p-5 border border-gray-100 flex flex-col justify-between transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-teal-100/50">
+                        <div>
+                            <!-- Cabeçalho do Card -->
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-shrink-0 w-8 h-8">${categoryIcon}</div>
+                                    <div class="flex-1 min-w-0">
+                                        <h3 class="text-lg font-bold text-gray-800 leading-tight truncate" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</h3>
+                                        ${storeHTML}
+                                    </div>
+                                </div>
+                                <!-- Badge de Status -->
+                                <span class="text-xs font-bold px-2.5 py-1 rounded-full ${statusClass} whitespace-nowrap ml-2">
+                                    ${escapeHTML(statusText)}
+                                </span>
+                            </div>
+                            
+                            <!-- Corpo do Card (Contadores) -->
+                            <div class="grid grid-cols-2 gap-4 my-5 px-1">
+                                <!-- Lado Esquerdo: Countdown de Entrega -->
+                                <div class="border-r border-gray-200 pr-4">
+                                    <label class="text-xs text-gray-500 uppercase font-medium">Entrega</label>
+                                    <p class="text-2xl font-extrabold ${deliveryColorClass}">${deliveryTimeHTML}</p>
+                                    <p class="text-sm text-gray-600">${deliveryDate}</p>
+                                </div>
+                                <!-- Lado Direito: Dias de Compra -->
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase font-medium">Compra</label>
+                                    <p class="text-2xl font-extrabold text-gray-800">${purchaseDaysText}</p>
+                                    <p class="text-sm text-gray-600">${purchaseSubText}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Botão de Rastreio (se existir) -->
+                            ${trackingButtonHTML ? `
+                            <div class="mt-5 mb-2">
+                                ${trackingButtonHTML}
+                            </div>
+                            ` : ''}
+
+                        </div>
+                        
+                        <!-- (*** NOVO LAYOUT ***) Botões de Ação (Rodapé com layout dividido) -->
+                        <div class="flex justify-between items-center gap-2 mt-4 pt-4 border-t border-gray-100">
+                            <!-- Botão "Entregue" à esquerda -->
+                            ${deliverButtonHTML}
+                            
+                            <!-- Botões "Editar" e "Excluir" à direita -->
+                            <div class="flex gap-2">
+                                <button data-id="${item.id}" class="edit-btn flex items-center gap-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors">
+                                    <i class="fa-solid fa-pencil w-4 h-4"></i>
+                                    Editar
+                                </button>
+                                <button data-id="${item.id}" class="delete-btn flex items-center gap-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-md transition-colors">
+                                    <i class="fa-solid fa-trash-can w-4 h-4"></i>
+                                    Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            /**
+             * Adiciona todos os event listeners da aplicação
+             */
+            function addEventListeners() {
+                openModalBtn.addEventListener('click', () => openModal());
+                closeModalBtn.addEventListener('click', closeModal);
+                cancelBtn.addEventListener('click', closeModal);
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                });
+                form.addEventListener('submit', handleFormSubmit);
+                purchaseList.addEventListener('click', handleListActions);
+                filterContainer.addEventListener('click', handleFilterClick);
+            }
+
+            /**
+             * Manipula o envio do formulário (Cria ou Atualiza)
+             */
+            function handleFormSubmit(e) {
+                e.preventDefault();
+
+                // Lógica para ler o novo seletor de ícone (radio)
+                const selectedIcon = document.querySelector('input[name="item-icon-radio"]:checked');
+                
+                const formData = {
+                    name: document.getElementById('item-name').value.trim(),
+                    store: document.getElementById('store-name').value.trim(),
+                    purchaseDate: document.getElementById('purchase-date').value,
+                    deliveryDate: document.getElementById('delivery-date').value,
+                    status: document.getElementById('item-status').value,
+                    trackingCode: document.getElementById('tracking-code').value.trim(),
+                    icon: selectedIcon ? selectedIcon.value : 'caixa', // Pega o valor do radio
+                };
+                
+                const editId = editIdInput.value;
+
+                if (editId) {
+                    // LÓGICA DE ATUALIZAÇÃO DE STATUS
+                    const today = getTodayDate();
+                    const isOverdue = formData.deliveryDate < today;
+                    const isFinalStatus = formData.status === 'Entregue' || formData.status === 'Cancelado';
+
+                    if (isOverdue && !isFinalStatus) {
+                        formData.status = 'Atrasado'; 
+                    } else if (formData.status === 'Atrasado' && !isOverdue) {
+                        formData.status = 'Aguardando Envio';
+                    }
+                    // Atualiza o select do status no formulário caso tenha mudado
+                    document.getElementById('item-status').value = formData.status;
+
+                    const index = state.purchases.findIndex(item => item.id === editId);
+                    if (index !== -1) {
+                        state.purchases[index] = { ...state.purchases[index], ...formData };
+                        showToast('Compra atualizada com sucesso!');
+                    }
+                } else {
+                    const newItem = {
+                        id: Date.now().toString(),
+                        ...formData
+                    };
+                    state.purchases.push(newItem);
+                    showToast('Compra adicionada com sucesso!');
+                }
+
+                sortPurchases(); // Ordena a lista
+                savePurchasesToStorage();
+                renderList();
+                closeModal();
+            }
+
+            /**
+             * (*** ATUALIZADO ***)
+             * Manipula cliques na lista (Editar/Excluir/Entregue)
+             */
+            function handleListActions(e) {
+                const target = e.target;
+                const editBtn = target.closest('.edit-btn');
+                const deleteBtn = target.closest('.delete-btn');
+                const deliverBtn = target.closest('.deliver-btn'); // NOVO
+
+                if (editBtn) {
+                    const id = editBtn.dataset.id;
+                    const item = state.purchases.find(p => p.id === id);
+                    if (item) {
+                        openModal(item); 
+                    }
+                }
+
+                if (deleteBtn) {
+                    const id = deleteBtn.dataset.id;
+                    state.purchases = state.purchases.filter(p => p.id !== id);
+                    savePurchasesToStorage();
+                    renderList();
+                    showToast('Compra excluída.', 'bg-red-500');
+                }
+
+                // (NOVO) Manipulador do botão "Entregue"
+                if (deliverBtn) {
+                    const id = deliverBtn.dataset.id;
+                    const index = state.purchases.findIndex(p => p.id === id);
+                    if (index !== -1) {
+                        state.purchases[index].status = 'Entregue';
+                        sortPurchases(); // Re-ordena (item vai para o fim)
+                        savePurchasesToStorage();
+                        renderList(); // Re-renderiza a UI
+                        showToast('Compra marcada como entregue!', 'bg-green-500');
+                    }
+                }
+            }
+            
+            /**
+             * Manipula o clique nos botões de filtro (pills)
+             */
+            function handleFilterClick(e) {
+                const target = e.target.closest('button.filter-pill');
+                
+                if (!target) return;
+
+                const newFilter = target.dataset.filter;
+
+                if (newFilter === state.filter) return;
+
+                state.filter = newFilter;
+
+                const buttons = filterContainer.querySelectorAll('button.filter-pill');
+                
+                const inactiveClasses = ['bg-white', 'text-gray-600', 'border-gray-200', 'hover:bg-gray-50', 'hover:shadow-sm'];
+                const classesToRemove = [
+                    'bg-teal-600', 'text-white', 'border-transparent', 'shadow',
+                    'bg-green-100', 'text-green-800',
+                    'bg-cyan-100', 'text-cyan-800', 'font-bold',
+                    'bg-orange-100', 'text-orange-800', 'font-bold', // Atualizado para Laranja
+                    'bg-red-100', 'text-red-800',
+                    'bg-purple-100', 'text-purple-800', 'font-bold'
+                ];
+
+                buttons.forEach(btn => {
+                    btn.classList.remove(...classesToRemove);
+                    btn.classList.add(...inactiveClasses);
+                });
+
+                target.classList.remove(...inactiveClasses);
+                
+                if (newFilter === 'todos') {
+                    target.classList.add('bg-teal-600', 'text-white', 'border-transparent', 'shadow');
+                } else {
+                    // Usa a classe do badge para colorir o filtro
+                    const { statusClass } = getStatusInfo(newFilter);
+                    target.classList.add(...statusClass.split(' '), 'border-transparent', 'shadow');
+                }
+                
+                renderList();
+            }
+
+            /**
+             * Abre o modal.
+             */
+            function openModal(item = null) {
+                form.reset(); 
+
+                if (item) {
+                    modalTitle.textContent = 'Editar Compra';
+                    editIdInput.value = item.id;
+                    document.getElementById('item-name').value = item.name;
+                    document.getElementById('store-name').value = item.store;
+                    document.getElementById('purchase-date').value = item.purchaseDate;
+                    document.getElementById('delivery-date').value = item.deliveryDate;
+                    document.getElementById('item-status').value = item.status;
+                    document.getElementById('tracking-code').value = item.trackingCode;
+                    // Lógica para marcar o radio button correto
+                    const iconId = `icon-${item.icon || 'caixa'}`;
+                    const iconRadio = document.getElementById(iconId);
+                    if (iconRadio) {
+                        iconRadio.checked = true;
+                    } else {
+                        document.getElementById('icon-caixa').checked = true; // Fallback
+                    }
+                } else {
+                    modalTitle.textContent = 'Nova Compra'; // Título corrigido
+                    editIdInput.value = '';
+                    const today = getTodayDate();
+                    document.getElementById('purchase-date').value = today;
+                    document.getElementById('icon-caixa').checked = true; // Padrão
+                }
+
+                modal.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                     modal.classList.add('modal-fade-enter-active');
+                     modal.classList.remove('modal-fade-enter');
+                });
+            }
+
+            /**
+             * Fecha o modal e reseta o formulário
+             */
+            function closeModal() {
+                modal.classList.add('modal-fade-leave-active');
+                modal.classList.remove('modal-fade-enter-active');
+                
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('modal-fade-leave-active');
+                    modal.classList.add('modal-fade-enter');
+                    form.reset();
+                    editIdInput.value = '';
+                }, 200); 
+            }
+
+            // --- Funções Utilitárias ---
+
+            /**
+             * Retorna a data local de hoje no formato YYYY-MM-DD
+             */
+            function getTodayDate() {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = (today.getMonth() + 1).toString().padStart(2, '0'); // Mês é 0-indexado
+                const day = today.getDate().toString().padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            /**
+             * Ordena a lista por prioridade de status e data
+             */
+            function sortPurchases() {
+                const getStatusPriority = (status) => {
+                    switch (status) {
+                        case 'Atrasado': return 1; // Mais importante
+                        case 'Em Trânsito': return 2;
+                        case 'Aguardando Envio': return 3;
+                        case 'Entregue': return 4;
+                        case 'Cancelado': return 5;
+                        default: return 6;
+                    }
+                };
+
+                state.purchases.sort((a, b) => {
+                    const priorityA = getStatusPriority(a.status);
+                    const priorityB = getStatusPriority(b.status);
+
+                    // 1. Ordena por prioridade de status
+                    if (priorityA !== priorityB) {
+                        return priorityA - priorityB;
+                    }
+
+                    // 2. Se a prioridade for a mesma:
+                    // Para itens ativos (prioridade < 4), ordena pela data de entrega mais próxima (ascendente)
+                    if (priorityA < 4) { 
+                        return new Date(a.deliveryDate) - new Date(b.deliveryDate);
+                    } else {
+                    // Para itens finalizados (Entregue, Cancelado), ordena pela data mais recente (descendente)
+                        return new Date(b.deliveryDate) - new Date(a.deliveryDate);
+                    }
+                });
+            }
+
+            /**
+             * Calcula a diferença de dias (Date1 - Date2)
+             */
+            function calculateDaysDifference(dateStr1, dateStr2) {
+                const date1 = new Date(dateStr1 + 'T00:00:00');
+                const date2 = new Date(dateStr2 + 'T00:00:00');
+                const diffTime = date1.getTime() - date2.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays;
+            }
+
+            function formatDate(dateString) {
+                if (!dateString) return 'N/A';
+                const [year, month, day] = dateString.split('-');
+                return `${day}/${month}/${year}`;
+            }
+            
+            /**
+             * Retorna ícone de HTML para a CATEGORIA (usando Font Awesome)
+             * @param {string} iconName - O nome do ícone (ex: 'caixa', 'presente')
+             * @param {string} cssClass - Classes de cor/tamanho
+             * @returns {string} - O HTML do ícone
+             */
+            function getCategoryIcon(iconName, cssClass) {
+                let iconClass = '';
+                switch (iconName) {
+                    case 'presente':
+                        iconClass = 'fa-gift';
+                        break;
+                    case 'eletronico':
+                        iconClass = 'fa-mobile-screen';
+                        break;
+                    case 'roupa':
+                        iconClass = 'fa-bag-shopping';
+                        break;
+                    case 'comida':
+                        iconClass = 'fa-utensils';
+                        break;
+                    case 'livro':
+                        iconClass = 'fa-book';
+                        break;
+
+                    case 'caixa':
+                    default:
+                        iconClass = 'fa-box';
+                        break;
+                }
+                return `<i class="fa-solid ${iconClass} ${cssClass}"></i>`;
+            }
+
+            /**
+             * Retorna classes e texto para o STATUS (badge)
+             * @param {string} status
+             * @returns {object}
+             */
+            function getStatusInfo(status) {
+                switch (status) {
+                    case 'Entregue':
+                        return { statusClass: 'bg-green-100 text-green-800', statusText: 'Entregue' };
+                    case 'Em Trânsito':
+                        return { statusClass: 'bg-cyan-100 text-cyan-800 font-bold', statusText: 'Em Trânsito' };
+                    case 'Atrasado':
+                        // Cor alterada para Laranja para maior alerta
+                        return { statusClass: 'bg-orange-100 text-orange-800 font-bold', statusText: 'Atrasado' };
+                    case 'Cancelado':
+                        return { statusClass: 'bg-red-100 text-red-800', statusText: 'Cancelado' };
+                    case 'Aguardando Envio':
+                    default:
+                        return { statusClass: 'bg-purple-100 text-purple-800 font-bold', statusText: 'Aguard. Envio' };
+                }
+            }
+
+            function escapeHTML(str) {
+                if (typeof str !== 'string') return '';
+                return str.replace(/[&<>"']/g, (match) => {
+                    const map = {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#39;'
+                    };
+                    return map[match];
+                });
+            }
+            
+            /**
+             * Mostra uma mensagem de notificação (toast)
+             * @param {string} message - A mensagem a ser exibida
+             * @param {string} [bgColor='bg-teal-500'] - Cor de fundo do toast
+             */
+            let toastTimer;
+            function showToast(message, bgColor = 'bg-teal-500') {
+                if (toastTimer) {
+                    clearTimeout(toastTimer);
+                }
+
+                toast.classList.remove('bg-teal-500', 'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-orange-500');
+                toast.classList.add(bgColor);
+                
+                toastMessage.textContent = message;
+
+                toast.classList.remove('translate-x-[200%]');
+                toast.classList.add('translate-x-0');
+
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('translate-x-0');
+                    toast.classList.add('translate-x-[200%]');
+                }, 3000);
+            }
+
+            // --- Inicializa a Aplicação ---
+            init();
+        });
+    </script>
+
+</body>
+</html>
+
