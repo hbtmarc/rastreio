@@ -316,18 +316,77 @@
         /* Estilo padrão para inputs do formulário */
         .form-input-base {
             width: 100%;
-            background-color: #f3f4f6; /* bg-gray-100 */
-            border: 2px solid #f3f4f6; /* bg-gray-100 */
-            border-radius: 0.5rem; /* rounded-lg */
-            padding: 0.75rem 1rem; /* py-3 px-4 */
-            color: #111827; /* text-gray-900 */
-            transition: all 0.2s ease-in-out;
+            background: #ffffff;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 0.625rem;
+            padding: 0.75rem 1rem;
+            color: #1f2937;
+            font-size: 0.9375rem;
+            line-height: 1.5;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
+        
+        .form-input-base:hover {
+            border-color: #14b8a6;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
         .form-input-base:focus {
-            background-color: #ffffff;
-            border-color: #14b8a6; /* ring-teal-500 */
-            box-shadow: 0 0 0 2px #a7f3d0; /* focus:ring-teal-200 */
+            background: #ffffff;
+            border-color: #14b8a6;
+            box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
             outline: none;
+        }
+        
+        /* Estilo especial para selects - UX Design Moderno */
+        select.form-input-base {
+            cursor: pointer;
+            font-weight: 500;
+            padding-right: 2.5rem;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 1.25rem 1.25rem;
+            appearance: none;
+        }
+        
+        select.form-input-base:hover {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2314b8a6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+        }
+        
+        select.form-input-base:focus {
+            font-weight: 500;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2314b8a6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+        }
+        
+        /* Estilo para options dos selects - Melhor contraste e legibilidade */
+        select.form-input-base option {
+            padding: 0.625rem 1rem;
+            background-color: #ffffff;
+            color: #1f2937;
+            font-weight: 500;
+            font-size: 0.9375rem;
+        }
+        
+        select.form-input-base option:checked {
+            background: linear-gradient(0deg, #14b8a6 0%, #0d9488 100%);
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        select.form-input-base option:hover {
+            background-color: #f0fdfa;
+            color: #0f766e;
+        }
+
+        /* Estilo para select desabilitado */
+        select.form-input-base:disabled {
+            background-color: #f9fafb;
+            border-color: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
 
     </style>
@@ -338,29 +397,35 @@
     <div class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
 
             <!-- Cabeçalho -->
-        <header class="flex flex-col sm:flex-row justify-between items-center mb-10">
-            <!-- Título com Gradiente -->
-            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-500 mb-4 sm:mb-0">
-                Meu Rastreador de Compras
-            </h1>
-            <!-- Grupo de Botões com Animação -->
-            <div class="flex items-center relative group">
-                <!-- Container dos Botões de Backup (inicialmente ocultos) -->
-                <div class="flex items-center gap-2 absolute right-full mr-3 opacity-0 invisible transform translate-x-2 group-hover:opacity-100 group-hover:visible group-hover:translate-x-0 transition-all duration-300 ease-in-out">
-                    <!-- Botão de Backup -->
-                    <button id="backup-btn" class="flex items-center justify-center w-10 h-10 bg-blue-500 text-white rounded-lg shadow-lg hover:shadow-xl hover:bg-blue-600 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-200" title="Fazer backup dos dados">
-                        <i class="fa-solid fa-floppy-disk w-5 h-5"></i>
-                    </button>
-                    <!-- Botão de Restaurar -->
-                    <button id="restore-btn" class="flex items-center justify-center w-10 h-10 bg-purple-500 text-white rounded-lg shadow-lg hover:shadow-xl hover:bg-purple-600 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-200" title="Restaurar backup">
-                        <i class="fa-solid fa-clock-rotate-left w-5 h-5"></i>
+        <header class="mb-8 sm:mb-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 group">
+                <!-- Título com Gradiente -->
+                <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-500">
+                    Meu Rastreador
+                </h1>
+                
+                <!-- Grupo de Botões na mesma linha -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <!-- Botões de Backup (invisíveis até hover) -->
+                    <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <!-- Botão de Backup -->
+                        <button id="backup-btn" class="flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:shadow-lg hover:bg-blue-600 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-300" title="Fazer backup dos dados">
+                            <i class="fa-solid fa-floppy-disk w-4 h-4"></i>
+                            <span class="text-sm font-medium hidden sm:inline">Backup</span>
+                        </button>
+                        <!-- Botão de Restaurar -->
+                        <button id="restore-btn" class="flex items-center justify-center gap-2 px-3 py-2 bg-purple-500 text-white rounded-lg shadow-md hover:shadow-lg hover:bg-purple-600 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-300" title="Restaurar backup">
+                            <i class="fa-solid fa-clock-rotate-left w-4 h-4"></i>
+                            <span class="text-sm font-medium hidden sm:inline">Restaurar</span>
+                        </button>
+                    </div>
+                    <!-- Botão Adicionar -->
+                    <button id="open-modal-btn" class="flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl hover:from-teal-600 hover:to-cyan-700 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-300 whitespace-nowrap">
+                        <i class="fa-solid fa-plus w-4 h-4"></i>
+                        <span class="hidden sm:inline">Adicionar Compra</span>
+                        <span class="sm:hidden">Adicionar</span>
                     </button>
                 </div>
-                <!-- Botão Adicionar -->
-                <button id="open-modal-btn" class="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:from-teal-600 hover:to-cyan-700 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-cyan-200">
-                    <i class="fa-solid fa-plus w-5 h-5"></i>
-                    Adicionar Compra
-                </button>
             </div>
         </header>
 
@@ -387,98 +452,149 @@
                 </div>
             </div>
         </div>        <!-- Filtros e Controles -->
-        <div class="mb-8 space-y-4">
+        <div class="mb-6 sm:mb-8 space-y-4">
             <!-- Status e Arquivados -->
-            <div class="flex items-center justify-between">
-                <div id="filter-container" class="flex items-center gap-2 pb-2 overflow-x-auto">
-                    <button 
-                        data-filter="todos" 
-                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-bold border transition-all duration-200 cursor-pointer bg-teal-600 text-white border-transparent shadow">
-                        Todos
-                    </button>
-                    <button 
-                        data-filter="Aguardando Envio" 
-                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
-                        Aguardando Envio
-                    </button>
-                    <button 
-                        data-filter="Em Trânsito" 
-                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
-                        Em Trânsito
-                    </button>
-                    <button 
-                        data-filter="Atrasado" 
-                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
-                        Atrasado
-                    </button>
-                    <button 
-                        data-filter="Entregue" 
-                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
-                        Entregue
-                    </button>
-                    <button 
-                        data-filter="Cancelado" 
-                        class="filter-pill whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
-                        Cancelado
-                    </button>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div id="filter-container" class="flex-1 overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
+                    <div class="flex gap-2 min-w-max">
+                        <button 
+                            data-filter="todos" 
+                            class="filter-pill whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold border transition-all duration-200 cursor-pointer bg-teal-600 text-white border-transparent shadow">
+                            Todos
+                        </button>
+                        <button 
+                            data-filter="Aguardando Envio" 
+                            class="filter-pill whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                            Aguardando Envio
+                        </button>
+                        <button 
+                            data-filter="Em Trânsito" 
+                            class="filter-pill whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                            Em Trânsito
+                        </button>
+                        <button 
+                            data-filter="Atrasado" 
+                            class="filter-pill whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                            Atrasado
+                        </button>
+                        <button 
+                            data-filter="Entregue" 
+                            class="filter-pill whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                            Entregue
+                        </button>
+                        <button 
+                            data-filter="Cancelado" 
+                            class="filter-pill whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium border transition-all duration-200 cursor-pointer bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:shadow-sm">
+                            Cancelado
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Toggle Arquivados -->
-                <button id="toggle-archived" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                <button id="toggle-archived" class="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
                     <i class="fa-solid fa-box-archive"></i>
-                    Ver Arquivados
+                    <span class="whitespace-nowrap">Ver Arquivados</span>
                 </button>
             </div>
 
-            <!-- Filtros e Contadores -->
-            <div class="flex items-center justify-between gap-3 flex-wrap">
-                <!-- Filtros -->
-                <div class="flex items-center gap-3 flex-1">
+            <!-- Filtros de Loja/Categoria e Contador -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div class="flex flex-col sm:flex-row gap-3 flex-1">
                     <!-- Filtro de Loja -->
-                    <div class="relative flex-1 max-w-xs">
-                        <i class="fa-solid fa-store absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                        <select 
-                            id="store-filter" 
-                            class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none cursor-pointer bg-white">
-                            <option value="">Todas as lojas</option>
-                            <!-- Será preenchido dinamicamente -->
-                        </select>
-                        <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    <div class="relative flex-1 store-filter-dropdown-container">
+                        <div class="relative flex items-center">
+                            <i class="fa-solid fa-store absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10"></i>
+                            <input type="text" 
+                                   id="store-filter-input" 
+                                   class="form-input-base pl-10 pr-8 cursor-pointer" 
+                                   placeholder="Todas as lojas"
+                                   readonly
+                                   autocomplete="off">
+                            <button type="button" 
+                                    class="store-filter-toggle absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                <i class="fa-solid fa-chevron-down text-[0.6rem] opacity-70"></i>
+                            </button>
+                        </div>
+                        <div class="store-filter-menu hidden absolute left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-y-auto z-20">
+                            <div class="store-filter-options">
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="">
+                                    <span class="text-sm text-gray-700 font-medium">Todas as lojas</span>
+                                </div>
+                                <!-- Preenchido dinamicamente -->
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Filtro de Categoria -->
-                    <div class="relative flex-1 max-w-xs">
-                        <i class="fa-solid fa-tags absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                        <select 
-                            id="category-filter" 
-                            class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none cursor-pointer bg-white">
-                            <option value="">Todas as categorias</option>
-                            <option value="caixa">Caixa/Pacote</option>
-                            <option value="presente">Presente</option>
-                            <option value="eletronico">Eletrônico</option>
-                            <option value="roupa">Roupas/Sacola</option>
-                            <option value="comida">Comida/Mercado</option>
-                            <option value="livro">Livro</option>
-                            <option value="computador">Computador/Hardware</option>
-                            <option value="game">Games/Consoles</option>
-                            <option value="casa">Casa/Decoração</option>
-                            <option value="ferramenta">Ferramentas</option>
-                            <option value="saude">Saúde/Remédios</option>
-                            <option value="musica">Música/Instrumentos</option>
-                        </select>
-                        <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    <div class="relative flex-1 category-filter-dropdown-container">
+                        <div class="relative flex items-center">
+                            <i class="fa-solid fa-tags absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10"></i>
+                            <input type="text" 
+                                   id="category-filter-input" 
+                                   class="form-input-base pl-10 pr-8 cursor-pointer" 
+                                   placeholder="Todas as categorias"
+                                   readonly
+                                   autocomplete="off">
+                            <button type="button" 
+                                    class="category-filter-toggle absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                <i class="fa-solid fa-chevron-down text-[0.6rem] opacity-70"></i>
+                            </button>
+                        </div>
+                        <div class="category-filter-menu hidden absolute left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-y-auto z-20">
+                            <div class="category-filter-options">
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="">
+                                    <span class="text-sm text-gray-700 font-medium">Todas as categorias</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="caixa">
+                                    <span class="text-sm text-gray-700 font-medium">Caixa/Pacote</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="presente">
+                                    <span class="text-sm text-gray-700 font-medium">Presente</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="eletronico">
+                                    <span class="text-sm text-gray-700 font-medium">Eletrônico</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="roupa">
+                                    <span class="text-sm text-gray-700 font-medium">Roupas/Sacola</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="comida">
+                                    <span class="text-sm text-gray-700 font-medium">Comida/Mercado</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="livro">
+                                    <span class="text-sm text-gray-700 font-medium">Livro</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="computador">
+                                    <span class="text-sm text-gray-700 font-medium">Computador/Hardware</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="game">
+                                    <span class="text-sm text-gray-700 font-medium">Games/Consoles</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="casa">
+                                    <span class="text-sm text-gray-700 font-medium">Casa/Decoração</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="ferramenta">
+                                    <span class="text-sm text-gray-700 font-medium">Ferramentas</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="saude">
+                                    <span class="text-sm text-gray-700 font-medium">Saúde/Remédios</span>
+                                </div>
+                                <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors" data-value="musica">
+                                    <span class="text-sm text-gray-700 font-medium">Música/Instrumentos</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Contador de Itens -->
-                <div class="text-sm text-gray-600">
-                    <span id="filtered-count">0</span> / <span id="total-count">0</span> itens
+                <div class="text-sm text-gray-600 font-medium text-center sm:text-left whitespace-nowrap">
+                    <span id="filtered-count" class="text-teal-600 font-bold">0</span> / <span id="total-count">0</span> itens
                 </div>
             </div>
         </div>
 
         <!-- Lista de Compras (CRUD - Read) -->
-        <main id="purchase-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <main id="purchase-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
             <!-- Os cards de compra serão inseridos aqui pelo JavaScript -->
         </main>
 
@@ -492,10 +608,10 @@
 
     <!-- Modal (CRUD - Create/Update) - Limpo -->
     <div id="purchase-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden modal-fade-enter">
-        <div class="bg-white w-full max-w-lg rounded-xl shadow-2xl p-6 sm:p-8 relative transform transition-all">
+        <div class="bg-white w-full max-w-lg rounded-xl shadow-2xl p-6 sm:p-8 relative transform transition-all max-h-[90vh] overflow-y-auto">
             
             <!-- Botão de Fechar o Modal -->
-            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10">
                 <i class="fa-solid fa-xmark w-6 h-6"></i>
             </button>
 
@@ -774,6 +890,40 @@
             };
             const STORAGE_KEY = 'my_local_purchases';
 
+            // --- Funções Auxiliares para Dropdowns ---
+            
+            /**
+             * Atualiza as opções do filtro de lojas customizado
+             */
+            function updateStoreFilterOptions() {
+                const storeFilterOptions = document.querySelector('.store-filter-options');
+                if (!storeFilterOptions) return;
+                
+                const stores = new Set();
+                state.purchases.forEach(purchase => {
+                    if (purchase.store && purchase.store.trim()) {
+                        stores.add(purchase.store.trim());
+                    }
+                });
+
+                // Mantém a opção "Todas as lojas"
+                let optionsHTML = `
+                    <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="">
+                        <span class="text-sm text-gray-700 font-medium">Todas as lojas</span>
+                    </div>
+                `;
+                
+                optionsHTML += Array.from(stores)
+                    .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+                    .map(store => `
+                        <div class="px-3 py-2 hover:bg-teal-50 cursor-pointer transition-colors border-b border-gray-100" data-value="${escapeHTML(store)}">
+                            <span class="text-sm text-gray-700 font-medium">${escapeHTML(store)}</span>
+                        </div>
+                    `).join('');
+                
+                storeFilterOptions.innerHTML = optionsHTML;
+            }
+
             // --- Funções Principais ---
 
             /**
@@ -794,15 +944,8 @@
                     }
                 });
 
-                // Atualiza select de filtro de lojas
-                const storeFilter = document.getElementById('store-filter');
-                const currentValue = storeFilter.value;
-                storeFilter.innerHTML = '<option value="">Todas as lojas</option>' +
-                    Array.from(stores)
-                        .sort((a, b) => a.localeCompare(b, 'pt-BR'))
-                        .map(store => `<option value="${escapeHTML(store)}">${escapeHTML(store)}</option>`)
-                        .join('');
-                storeFilter.value = currentValue;
+                // Atualiza opções do filtro de lojas customizado
+                updateStoreFilterOptions();
 
                 // Atualiza datalist de tipos de rastreio
                 const trackingSuggestions = document.getElementById('tracking-type-suggestions');
@@ -847,10 +990,13 @@
             }
 
             /**
-             * Carrega os dados do Firebase para o estado
+             * Carrega os dados do Firebase para o estado (Otimizado com tratamento de erros)
              */
             async function loadPurchasesFromStorage() {
                 try {
+                    // Mostra indicador de loading
+                    purchaseList.innerHTML = '<div class="col-span-full flex justify-center items-center py-12"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div></div>';
+                    
                     // Carrega as compras
                     const purchasesSnapshot = await db.ref('purchases').once('value');
                     const purchasesData = purchasesSnapshot.val();
@@ -871,12 +1017,13 @@
                     renderList(); // Atualiza a interface
                 } catch (error) {
                     console.error('Erro ao carregar compras:', error);
-                    showToast('Erro ao carregar compras', 'bg-red-500');
+                    purchaseList.innerHTML = '<div class="col-span-full text-center py-12"><div class="text-red-500"><i class="fa-solid fa-exclamation-triangle fa-3x mb-4"></i><p class="text-lg font-semibold">Erro ao carregar compras</p><p class="text-sm text-gray-600 mt-2">Por favor, recarregue a página</p></div></div>';
+                    showToast('Erro ao carregar compras. Verifique sua conexão.', 'bg-red-500');
                 }
             }
 
             /**
-             * Salva o estado atual no Firebase
+             * Salva o estado atual no Firebase (Otimizado com tratamento de erros)
              */
             async function savePurchasesToStorage() {
                 try {
@@ -891,14 +1038,34 @@
                     await db.ref('state/lastUsedValues').set(state.lastUsedValues);
                 } catch (error) {
                     console.error('Erro ao salvar compras:', error);
-                    showToast('Erro ao salvar compras', 'bg-red-500');
+                    showToast('Erro ao salvar. Suas alterações podem não ter sido salvas.', 'bg-red-500');
+                    throw error; // Re-lança para tratamento superior se necessário
                 }
             }
 
             /**
-             * Renderiza a lista de compras na tela
+             * Formata o tempo restante de forma mais intuitiva
+             * @param {number} days - Número de dias
+             * @returns {string} - Texto formatado
+             */
+            function formatRemainingTime(days) {
+                if (days <= 7) return `${days} ${days === 1 ? 'dia' : 'dias'}`;
+                
+                const weeks = Math.floor(days / 7);
+                const remainingDays = days % 7;
+                
+                if (remainingDays === 0) {
+                    return `${weeks} ${weeks === 1 ? 'semana' : 'semanas'}`;
+                } else {
+                    return `${weeks} sem. e ${remainingDays} ${remainingDays === 1 ? 'dia' : 'dias'}`;
+                }
+            }
+
+            /**
+             * Renderiza a lista de compras na tela (Otimizado com DocumentFragment)
              */
             function renderList() {
+                // Limpa a lista
                 purchaseList.innerHTML = '';
 
                 // Verifica e atualiza status de atraso antes de renderizar
@@ -935,15 +1102,26 @@
                 if (state.purchases.length === 0) {
                     emptyState.classList.remove('hidden');
                     purchaseList.classList.add('hidden');
+                    return;
                 } else {
                     emptyState.classList.add('hidden');
                     purchaseList.classList.remove('hidden');
                 }
 
+                // Usa DocumentFragment para melhor performance
+                const fragment = document.createDocumentFragment();
+                const tempDiv = document.createElement('div');
+                
                 filteredPurchases.forEach(item => {
-                    const card = createPurchaseCard(item);
-                    purchaseList.innerHTML += card;
+                    const cardHTML = createPurchaseCard(item);
+                    tempDiv.innerHTML = cardHTML;
+                    fragment.appendChild(tempDiv.firstElementChild);
                 });
+
+                purchaseList.appendChild(fragment);
+
+                // Ajusta o tamanho dos textos após renderizar
+                setTimeout(() => adjustTextSize(), 0);
             }
 
             /**
@@ -992,7 +1170,7 @@
                 // 1. Contador de Tempo de Compra
                 const daysSincePurchase = calculateDaysDifference(today, item.purchaseDate);
                 let purchaseDaysText = ''; // Texto principal
-                let purchaseSubText = `(em ${formatDate(item.purchaseDate)})`; // Texto secundário (data)
+                let purchaseSubText = `(${formatDate(item.purchaseDate)})`; // Texto secundário (data) - removido "em"
 
                 if (daysSincePurchase < 0) {
                     purchaseDaysText = `Compra Futura`;
@@ -1013,15 +1191,20 @@
                     deliveryTimeHTML = item.status; // Mostra o status final
                     deliveryColorClass = 'text-gray-500';
                 } else if (daysToDelivery > 0) {
-                    deliveryTimeHTML = `Faltam ${daysToDelivery} ${daysToDelivery === 1 ? 'dia' : 'dias'}`;
-                    deliveryColorClass = 'text-gray-800';
+                    if (daysToDelivery === 1) {
+                        deliveryTimeHTML = 'Amanhã!';
+                        deliveryColorClass = 'text-gray-800';
+                    } else {
+                        deliveryTimeHTML = `Faltam ${formatRemainingTime(daysToDelivery)}`;
+                        deliveryColorClass = 'text-gray-800';
+                    }
                 } else if (daysToDelivery === 0) {
                     deliveryTimeHTML = `Entrega Hoje!`;
                     deliveryColorClass = 'text-cyan-600';
                 } else {
                     // Atrasado
                     const daysLate = Math.abs(daysToDelivery);
-                    deliveryTimeHTML = `+${daysLate} ${daysLate === 1 ? 'dia' : 'dias'}`;
+                    deliveryTimeHTML = `+${formatRemainingTime(daysLate)}`;
                     deliveryColorClass = 'text-red-600'; // Atrasado (vermelho)
                 }
                 
@@ -1068,36 +1251,45 @@
                 
                 // (*** NOVO ***) Botão "Marcar como Entregue"
                 const deliverButtonHTML = (item.status !== 'Entregue' && item.status !== 'Cancelado')
-                    ? `<button data-id="${item.id}" class="deliver-btn flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-200 px-3 py-1.5 rounded-md transition-colors">
-                           <i class="fa-solid fa-check-double w-4 h-4"></i>
-                           Entregue
+                    ? `<button data-id="${item.id}" 
+                              class="deliver-btn flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-200 px-3 py-1.5 rounded-md transition-colors"
+                              aria-label="Marcar ${escapeHTML(item.name)} como entregue">
+                           <i class="fa-solid fa-check-double w-4 h-4" aria-hidden="true"></i>
+                           <span>Entregue</span>
                        </button>`
                     : '<div></div>'; // Placeholder vazio para manter o layout
 
                 return `
-                                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-teal-100/50 ${item.archived ? 'opacity-75' : ''}">
+                                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-teal-100/50 ${item.archived ? 'opacity-75' : ''}" role="article" aria-label="Card de compra: ${escapeHTML(item.name)}">
                         <!-- Cabeçalho do Card -->
                         <div class="p-3 pb-0">
-                            <div class="flex justify-between items-start">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex-shrink-0 w-16 h-16 bg-gray-50/50 rounded-lg flex items-center justify-center text-2xl">${categoryIcon}</div>
+                            <div class="flex justify-between items-start gap-2">
+                                <div class="flex items-center gap-3 flex-1 min-w-0">
+                                    <div class="flex-shrink-0 w-16 h-16 bg-gray-50/50 rounded-lg flex items-center justify-center text-2xl" aria-hidden="true">${categoryIcon}</div>
                                     <div class="flex-1 min-w-0 flex flex-col justify-center h-16">
                                         <h3 class="text-base font-bold text-gray-800 leading-tight fit-text hover:text-teal-600 transition-colors cursor-pointer" 
                                             data-max-size="16"
                                             data-min-size="12"
                                             title="${escapeHTML(item.name)}"
-                                            onclick="window.open('${item.orderLink || '#'}', '_blank')">${escapeHTML(item.name)}</h3>
+                                            onclick="window.open('${item.orderLink || '#'}', '_blank')"
+                                            role="button"
+                                            tabindex="0"
+                                            aria-label="Abrir link do pedido: ${escapeHTML(item.name)}">${escapeHTML(item.name)}</h3>
                                         ${storeHTML}
                                     </div>
                                 </div>
                                 <!-- Badge de Status com Dropdown -->
-                                <div class="flex flex-col items-end gap-2">
+                                <div class="flex flex-col items-end gap-2 flex-shrink-0">
                                     <div class="relative status-dropdown-container">
-                                        <button class="status-toggle text-xs font-bold px-2.5 py-1 rounded-full ${statusClass} whitespace-nowrap hover:shadow-sm transition-all flex items-center gap-1.5" data-id="${item.id}">
+                                        <button class="status-toggle text-xs font-bold px-2.5 py-1 rounded-full ${statusClass} whitespace-nowrap hover:shadow-sm transition-all flex items-center gap-1.5" 
+                                                data-id="${item.id}"
+                                                aria-label="Alterar status. Atual: ${escapeHTML(statusText)}"
+                                                aria-haspopup="true"
+                                                aria-expanded="false">
                                             ${escapeHTML(statusText)}
-                                            <i class="fa-solid fa-chevron-down text-[0.6rem] opacity-70"></i>
+                                            <i class="fa-solid fa-chevron-down text-[0.6rem] opacity-70" aria-hidden="true"></i>
                                         </button>
-                                        <div class="status-menu hidden absolute right-0 mt-1 bg-white rounded-lg shadow-lg border-x border-gray-100 min-w-[140px] z-10 overflow-hidden">
+                                        <div class="status-menu hidden absolute right-0 sm:right-auto sm:left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-100 min-w-[140px] max-w-[200px] z-50 overflow-hidden" role="menu" aria-label="Opções de status">
                                             ${generateStatusOptions(item.status, item.id)}
                                         </div>
                                     </div>
@@ -1107,7 +1299,12 @@
                                             Arquivar
                                         </button>`
                                         : item.archived 
-                                            ? '<span class="text-xs font-medium text-gray-500">Arquivado</span>' 
+                                            ? `<div class="flex items-center gap-2">
+                                                <span class="text-xs font-medium text-gray-500">Arquivado</span>
+                                                <button data-id="${item.id}" class="unarchive-btn text-xs px-1.5 py-0.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-all" title="Desarquivar">
+                                                    <i class="fa-solid fa-box-open"></i>
+                                                </button>
+                                            </div>` 
                                             : ''}
                                 </div>
                             </div>
@@ -1115,16 +1312,16 @@
 
                         <!-- Corpo do Card (Contadores) -->
                         <div class="p-3 pt-2">
-                            <div class="grid grid-cols-2 gap-3">
-                                <!-- Lado Esquerdo: Countdown de Entrega -->
-                                <div class="border-r border-gray-100 pr-3">
+                            <div class="grid grid-cols-3 gap-3">
+                                <!-- Lado Esquerdo: Countdown de Entrega (2 colunas - maior) -->
+                                <div class="col-span-2 border-r border-gray-100 pr-3">
                                     <label class="text-xs text-gray-500 uppercase font-medium">Entrega</label>
-                                    <p class="text-lg font-extrabold ${deliveryColorClass}">${deliveryTimeHTML}</p>
+                                    <p class="text-lg font-extrabold ${deliveryColorClass} whitespace-nowrap fit-text" data-max-size="18" data-min-size="14">${deliveryTimeHTML}</p>
                                     <p class="text-xs text-gray-600">${deliveryDate}</p>
                                     <p class="text-xs text-gray-400 italic">${getDayOfWeek(item.deliveryDate)}</p>
                                 </div>
-                                <!-- Lado Direito: Dias de Compra -->
-                                <div>
+                                <!-- Lado Direito: Dias de Compra (1 coluna - menor) -->
+                                <div class="text-right">
                                     <label class="text-xs text-gray-500 uppercase font-medium">Compra</label>
                                     <p class="text-lg font-extrabold text-gray-800">${purchaseDaysText}</p>
                                     <p class="text-xs text-gray-600">${purchaseSubText}</p>
@@ -1146,13 +1343,17 @@
                             
                             <!-- Botões "Editar" e "Excluir" à direita -->
                             <div class="flex gap-1.5">
-                                <button data-id="${item.id}" class="edit-btn flex items-center gap-1 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-200 px-2 py-1 rounded-md transition-colors">
-                                    <i class="fa-solid fa-pencil w-3.5 h-3.5"></i>
-                                    Editar
+                                <button data-id="${item.id}" 
+                                        class="edit-btn flex items-center gap-1 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-200 px-2 py-1 rounded-md transition-colors"
+                                        aria-label="Editar compra: ${escapeHTML(item.name)}">
+                                    <i class="fa-solid fa-pencil w-3.5 h-3.5" aria-hidden="true"></i>
+                                    <span>Editar</span>
                                 </button>
-                                <button data-id="${item.id}" class="delete-btn flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
-                                    <i class="fa-solid fa-trash-can w-3.5 h-3.5"></i>
-                                    Excluir
+                                <button data-id="${item.id}" 
+                                        class="delete-btn flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors"
+                                        aria-label="Excluir compra: ${escapeHTML(item.name)}">
+                                    <i class="fa-solid fa-trash-can w-3.5 h-3.5" aria-hidden="true"></i>
+                                    <span>Excluir</span>
                                 </button>
                             </div>
                         </div>
@@ -1273,19 +1474,82 @@
                     }
                 });
 
-                // Filtros de loja e categoria
-                const storeFilter = document.getElementById('store-filter');
-                const categoryFilter = document.getElementById('category-filter');
+                // Filtros de loja e categoria - Dropdowns customizados
+                const storeFilterInput = document.getElementById('store-filter-input');
+                const storeFilterToggle = document.querySelector('.store-filter-toggle');
+                const storeFilterMenu = document.querySelector('.store-filter-menu');
+                const storeFilterOptions = document.querySelector('.store-filter-options');
                 
-                storeFilter.addEventListener('change', (e) => {
-                    state.storeFilter = e.target.value;
-                    updateSuggestions(); // Atualiza as sugestões quando mudar o filtro
-                    renderList();
+                const categoryFilterInput = document.getElementById('category-filter-input');
+                const categoryFilterToggle = document.querySelector('.category-filter-toggle');
+                const categoryFilterMenu = document.querySelector('.category-filter-menu');
+                const categoryFilterOptions = document.querySelector('.category-filter-options');
+                
+                // Toggle dropdown de loja
+                storeFilterToggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    storeFilterMenu.classList.toggle('hidden');
+                    categoryFilterMenu.classList.add('hidden');
+                    updateStoreFilterOptions();
                 });
                 
-                categoryFilter.addEventListener('change', (e) => {
-                    state.categoryFilter = e.target.value;
-                    renderList();
+                storeFilterInput.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    storeFilterMenu.classList.toggle('hidden');
+                    categoryFilterMenu.classList.add('hidden');
+                    updateStoreFilterOptions();
+                });
+                
+                // Toggle dropdown de categoria
+                categoryFilterToggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    categoryFilterMenu.classList.toggle('hidden');
+                    storeFilterMenu.classList.add('hidden');
+                });
+                
+                categoryFilterInput.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    categoryFilterMenu.classList.toggle('hidden');
+                    storeFilterMenu.classList.add('hidden');
+                });
+                
+                // Fecha dropdowns ao clicar fora
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.store-filter-dropdown-container')) {
+                        storeFilterMenu.classList.add('hidden');
+                    }
+                    if (!e.target.closest('.category-filter-dropdown-container')) {
+                        categoryFilterMenu.classList.add('hidden');
+                    }
+                });
+                
+                // Seleciona opção do filtro de loja
+                storeFilterOptions.addEventListener('click', (e) => {
+                    const option = e.target.closest('[data-value]');
+                    if (option) {
+                        const value = option.dataset.value;
+                        const text = option.querySelector('span').textContent.trim();
+                        storeFilterInput.value = text;
+                        state.storeFilter = value;
+                        storeFilterMenu.classList.add('hidden');
+                        updateSuggestions();
+                        renderList();
+                    }
+                });
+                
+                // Seleciona opção do filtro de categoria
+                categoryFilterOptions.addEventListener('click', (e) => {
+                    const option = e.target.closest('[data-value]');
+                    if (option) {
+                        const value = option.dataset.value;
+                        const text = option.querySelector('span').textContent.trim();
+                        categoryFilterInput.value = text;
+                        state.categoryFilter = value;
+                        categoryFilterMenu.classList.add('hidden');
+                        renderList();
+                    }
                 });
 
                 // Inicializa as sugestões e o dropdown de lojas
@@ -1328,6 +1592,8 @@
                     if (!statusToggle && !statusOption) {
                         document.querySelectorAll('.status-menu').forEach(menu => {
                             menu.classList.add('hidden');
+                            const toggle = menu.closest('.status-dropdown-container')?.querySelector('.status-toggle');
+                            if (toggle) toggle.setAttribute('aria-expanded', 'false');
                         });
                         return;
                     }
@@ -1336,15 +1602,19 @@
                     if (statusToggle) {
                         const container = statusToggle.closest('.status-dropdown-container');
                         const menu = container.querySelector('.status-menu');
+                        const isHidden = menu.classList.contains('hidden');
                         
                         // Fecha outros menus abertos
                         document.querySelectorAll('.status-menu').forEach(otherMenu => {
                             if (otherMenu !== menu) {
                                 otherMenu.classList.add('hidden');
+                                const otherToggle = otherMenu.closest('.status-dropdown-container')?.querySelector('.status-toggle');
+                                if (otherToggle) otherToggle.setAttribute('aria-expanded', 'false');
                             }
                         });
 
                         menu.classList.toggle('hidden');
+                        statusToggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
                         e.stopPropagation();
                     }
 
@@ -1357,7 +1627,22 @@
                         updateItemStatus(itemId, newStatus);
                         
                         // Fecha o menu
-                        statusOption.closest('.status-menu').classList.add('hidden');
+                        const menu = statusOption.closest('.status-menu');
+                        menu.classList.add('hidden');
+                        const toggle = menu.closest('.status-dropdown-container')?.querySelector('.status-toggle');
+                        if (toggle) {
+                            toggle.setAttribute('aria-expanded', 'false');
+                            toggle.focus(); // Retorna o foco ao botão
+                        }
+                    }
+                });
+
+                // Suporte a navegação por teclado nos dropdowns
+                document.addEventListener('keydown', (e) => {
+                    const statusToggle = e.target.closest('.status-toggle');
+                    if (statusToggle && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        statusToggle.click();
                     }
                 });
 
@@ -1576,6 +1861,25 @@
                         } catch (error) {
                             console.error('Erro ao arquivar:', error);
                             showToast('Erro ao arquivar compra', 'bg-red-500');
+                        }
+                    }
+                }
+
+                // Manipula o botão de desarquivar
+                const unarchiveBtn = target.closest('.unarchive-btn');
+                if (unarchiveBtn) {
+                    const id = unarchiveBtn.dataset.id;
+                    const index = state.purchases.findIndex(p => p.id === id);
+                    
+                    if (index !== -1) {
+                        state.purchases[index].archived = false;
+                        try {
+                            await savePurchasesToStorage();
+                            showToast('Compra desarquivada!', 'bg-blue-500');
+                            renderList();
+                        } catch (error) {
+                            console.error('Erro ao desarquivar:', error);
+                            showToast('Erro ao desarquivar compra', 'bg-red-500');
                         }
                     }
                 }
@@ -2187,26 +2491,45 @@
                 trackingTypeSelect.value = currentValue;
             }
 
+            // Função de debounce para otimizar performance
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
             // Função para ajustar tamanho da fonte para caber em uma linha
             function adjustTextSize() {
-                document.querySelectorAll('.fit-text').forEach(element => {
-                    const maxSize = parseInt(element.dataset.maxSize) || 16;
-                    const minSize = parseInt(element.dataset.minSize) || 12;
-                    let size = maxSize;
-                    
-                    element.style.whiteSpace = 'nowrap';
-                    element.style.fontSize = size + 'px';
-                    
-                    while (element.scrollWidth > element.offsetWidth && size > minSize) {
-                        size--;
+                requestAnimationFrame(() => {
+                    document.querySelectorAll('.fit-text').forEach(element => {
+                        const maxSize = parseInt(element.dataset.maxSize) || 16;
+                        const minSize = parseInt(element.dataset.minSize) || 12;
+                        let size = maxSize;
+                        
+                        // Reseta o estilo para começar do zero
                         element.style.fontSize = size + 'px';
-                    }
+                        
+                        // Reduz o tamanho da fonte até caber ou atingir o mínimo
+                        while (element.scrollWidth > element.offsetWidth && size > minSize) {
+                            size--;
+                            element.style.fontSize = size + 'px';
+                        }
+                    });
                 });
             }
 
+            // Versão com debounce para eventos de resize
+            const debouncedAdjustTextSize = debounce(adjustTextSize, 150);
+
             // Função para reajustar textos quando necessário
             const resizeObserver = new ResizeObserver(entries => {
-                adjustTextSize();
+                debouncedAdjustTextSize();
             });
 
             // --- Inicializa a Aplicação ---
