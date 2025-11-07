@@ -1010,19 +1010,63 @@
              * Inicializa a aplicação
              */
             async function init() {
-                await loadPurchasesFromStorage();
-                await fixSundayDeliveries(); // Corrige entregas que caiam no domingo
-                addEventListeners();
                 setupCarousel(); // Inicializa o carrossel
+                addEventListeners();
                 
-                // Escuta mudanças em tempo real
-                db.ref('purchases').on('value', (snapshot) => {
+                // Mostra indicador de loading
+                purchaseList.innerHTML = '<div class="col-span-full flex justify-center items-center py-12"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div></div>';
+                
+                // Variável para debounce do listener
+                let renderTimeout;
+                
+                // Configura o listener do Firebase PRIMEIRO para capturar todas as mudanças
+                db.ref('purchases').on('value', async (snapshot) => {
+                    // Cancela renderização pendente
+                    if (renderTimeout) clearTimeout(renderTimeout);
+                    
                     const data = snapshot.val();
-                    state.purchases = data ? Object.values(data) : [];
+                    const newPurchases = data ? Object.values(data) : [];
+                    
+                    // Atualiza o estado
+                    state.purchases = newPurchases;
+                    
+                    // Ordena SEMPRE antes de renderizar
                     sortPurchases();
-                    updateSuggestions();
-                    renderList();
+                    
+                    // Renderiza com pequeno delay para evitar múltiplas renderizações
+                    renderTimeout = setTimeout(() => {
+                        updateSuggestions();
+                        renderList();
+                        
+                        // Ajusta o tamanho dos textos após renderizar
+                        setTimeout(() => {
+                            document.querySelectorAll('.fit-text').forEach(element => {
+                                if (!element.dataset.observed) {
+                                    resizeObserver.observe(element);
+                                    element.dataset.observed = 'true';
+                                }
+                            });
+                            adjustTextSize();
+                        }, 50);
+                    }, 50);
                 });
+                
+                // Carrega o state dos últimos valores usados
+                const stateSnapshot = await db.ref('state/lastUsedValues').once('value');
+                const lastUsedValues = stateSnapshot.val();
+                if (lastUsedValues) {
+                    state.lastUsedValues = {
+                        store: lastUsedValues.store || '',
+                        trackingType: lastUsedValues.trackingType || 'correios',
+                        icon: lastUsedValues.icon || 'caixa'
+                    };
+                }
+                
+                // Carrega os tipos de rastreio personalizados
+                await updateTrackingTypeSuggestions();
+                
+                // Corrige entregas que caiam no domingo (apenas na inicialização)
+                setTimeout(() => fixSundayDeliveries(), 1000);
             }
 
             /**
@@ -1098,7 +1142,8 @@
             }
 
             /**
-             * Salva o estado atual no Firebase (Otimizado com tratamento de erros)
+             * Salva o estado atual no Firebase
+             * O listener do Firebase irá atualizar automaticamente a UI
              */
             async function savePurchasesToStorage() {
                 try {
@@ -1114,7 +1159,7 @@
                 } catch (error) {
                     console.error('Erro ao salvar compras:', error);
                     showToast('Erro ao salvar. Suas alterações podem não ter sido salvas.', 'bg-red-500');
-                    throw error; // Re-lança para tratamento superior se necessário
+                    throw error;
                 }
             }
 
@@ -1146,8 +1191,9 @@
                 // Verifica e atualiza status de atraso antes de renderizar
                 const statusChanged = checkAndUpdateStatus();
                 if (statusChanged) {
-                    sortPurchases(); // Re-ordena se o status mudou (ex: Atrasado)
-                    savePurchasesToStorage(); // Salva se algum status mudou
+                    // Se o status mudou, salva no Firebase (o listener re-renderizará automaticamente)
+                    savePurchasesToStorage();
+                    return; // Sai da função, o listener chamará renderList() novamente
                 }
 
                 // Atualiza as sugestões antes de filtrar
@@ -1609,6 +1655,7 @@
                         storeFilterInput.value = text;
                         state.storeFilter = value;
                         storeFilterMenu.classList.add('hidden');
+                        sortPurchases(); // Ordena antes de renderizar
                         updateSuggestions();
                         renderList();
                     }
@@ -1623,6 +1670,7 @@
                         categoryFilterInput.value = text;
                         state.categoryFilter = value;
                         categoryFilterMenu.classList.add('hidden');
+                        sortPurchases(); // Ordena antes de renderizar
                         renderList();
                     }
                 });
@@ -1672,6 +1720,7 @@
                     toggleArchivedBtn.innerHTML = state.showArchived 
                         ? '<i class="fa-solid fa-box-open"></i> Mostrar Ativos'
                         : '<i class="fa-solid fa-box-archive"></i> Mostrar Arquivados';
+                    sortPurchases(); // Ordena antes de renderizar
                     renderList();
                 });
 
@@ -1757,8 +1806,7 @@
                         };
 
                         await savePurchasesToStorage();
-                        sortPurchases();
-                        renderList();
+                        // O listener do Firebase atualizará automaticamente a UI
                         
                         const statusInfo = getStatusInfo(newStatus);
                         showToast(`Status atualizado para ${statusInfo.statusText}!`, 
@@ -1883,11 +1931,9 @@
                             updatedAt: firebase.database.ServerValue.TIMESTAMP 
                         };
                         
-                        // Salva no Firebase e força atualização imediata da interface
+                        // Salva no Firebase - o listener atualizará automaticamente a UI
                         try {
                             await savePurchasesToStorage();
-                            sortPurchases(); // Reordena a lista se necessário
-                            renderList(); // Força atualização da UI
                             showToast('Compra atualizada com sucesso!');
                         } catch (error) {
                             console.error('Erro ao atualizar compra:', error);
@@ -1905,7 +1951,6 @@
                     showToast('Compra adicionada com sucesso!');
                 }
 
-                sortPurchases(); // Ordena a lista
                 closeModal();
             }
 
@@ -1950,7 +1995,6 @@
                         try {
                             await savePurchasesToStorage();
                             showToast('Compra arquivada!', 'bg-gray-500');
-                            renderList();
                         } catch (error) {
                             console.error('Erro ao arquivar:', error);
                             showToast('Erro ao arquivar compra', 'bg-red-500');
@@ -1969,7 +2013,6 @@
                         try {
                             await savePurchasesToStorage();
                             showToast('Compra desarquivada!', 'bg-blue-500');
-                            renderList();
                         } catch (error) {
                             console.error('Erro ao desarquivar:', error);
                             showToast('Erro ao desarquivar compra', 'bg-red-500');
@@ -1989,7 +2032,6 @@
                             archived: true,
                             updatedAt: firebase.database.ServerValue.TIMESTAMP
                         };
-                        sortPurchases(); // Re-ordena (item vai para o fim)
                         try {
                             await savePurchasesToStorage();
                             showToast('Compra marcada como entregue e arquivada!', 'bg-green-500');
@@ -2042,6 +2084,8 @@
                     target.classList.add(...statusClass.split(' '), 'border-transparent', 'shadow');
                 }
                 
+                // Ordena antes de renderizar para garantir ordem consistente
+                sortPurchases();
                 renderList();
             }
 
@@ -2275,12 +2319,12 @@
             }
 
             /**
-             * Ordena a lista por prioridade de status e data
+             * Ordena a lista por prioridade de status e data de entrega
              */
             function sortPurchases() {
                 const getStatusPriority = (status) => {
                     switch (status) {
-                        case 'Atrasado': return 1; // Mais importante
+                        case 'Atrasado': return 1; // Mais urgente
                         case 'Em Trânsito': return 2;
                         case 'Aguardando Envio': return 3;
                         case 'Entregue': return 4;
@@ -2290,6 +2334,11 @@
                 };
 
                 state.purchases.sort((a, b) => {
+                    // Se um está arquivado e outro não, arquivados vão para o final
+                    if (a.archived !== b.archived) {
+                        return a.archived ? 1 : -1;
+                    }
+
                     const priorityA = getStatusPriority(a.status);
                     const priorityB = getStatusPriority(b.status);
 
@@ -2298,13 +2347,33 @@
                         return priorityA - priorityB;
                     }
 
-                    // 2. Se a prioridade for a mesma:
-                    // Para itens ativos (prioridade < 4), ordena pela data de entrega mais próxima (ascendente)
+                    // 2. Se a prioridade for a mesma, ordena por data de entrega
+                    // Para itens ativos (não entregues/cancelados), ordena pela data MAIS PRÓXIMA (ascendente)
                     if (priorityA < 4) { 
-                        return new Date(a.deliveryDate) - new Date(b.deliveryDate);
+                        const dateA = new Date(a.deliveryDate + 'T00:00:00').getTime();
+                        const dateB = new Date(b.deliveryDate + 'T00:00:00').getTime();
+                        
+                        // Se as datas forem iguais, ordena por data de compra (mais antigo primeiro)
+                        if (dateA === dateB) {
+                            const purchaseDateA = new Date(a.purchaseDate + 'T00:00:00').getTime();
+                            const purchaseDateB = new Date(b.purchaseDate + 'T00:00:00').getTime();
+                            return purchaseDateA - purchaseDateB;
+                        }
+                        
+                        return dateA - dateB;
                     } else {
-                    // Para itens finalizados (Entregue, Cancelado), ordena pela data mais recente (descendente)
-                        return new Date(b.deliveryDate) - new Date(a.deliveryDate);
+                        // Para itens finalizados (Entregue, Cancelado), ordena pela data MAIS RECENTE (descendente)
+                        const dateA = new Date(a.deliveryDate + 'T00:00:00').getTime();
+                        const dateB = new Date(b.deliveryDate + 'T00:00:00').getTime();
+                        
+                        // Se as datas forem iguais, ordena por data de compra (mais recente primeiro)
+                        if (dateA === dateB) {
+                            const purchaseDateA = new Date(a.purchaseDate + 'T00:00:00').getTime();
+                            const purchaseDateB = new Date(b.purchaseDate + 'T00:00:00').getTime();
+                            return purchaseDateB - purchaseDateA;
+                        }
+                        
+                        return dateB - dateA;
                     }
                 });
             }
@@ -2640,20 +2709,7 @@
                 debouncedAdjustTextSize();
             });
 
-            // --- Inicializa a Aplicação ---
-            async function init() {
-                setupCarousel();
-                addEventListeners();
-                await loadPurchasesFromStorage();
-                await updateTrackingTypeSuggestions(); // Carrega os tipos de rastreio personalizados
-                
-                // Inicia o observador de redimensionamento para os títulos
-                document.querySelectorAll('.fit-text').forEach(element => {
-                    resizeObserver.observe(element);
-                });
-                adjustTextSize();
-            }
-
+            // --- Inicializa a Aplicação (ÚNICO PONTO DE ENTRADA) ---
             init();
         });
     </script>
